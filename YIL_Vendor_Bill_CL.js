@@ -11,7 +11,7 @@ define(["N/search", "N/record", "N/url", "N/https"], function(search, record, ur
         var currentRecordObj = scriptContext.currentRecord;
         var mode = scriptContext.mode;
         
-        //console.log('mode -> '+mode);
+        console.log('mode -> '+mode);
 
         if(mode == 'create' || mode == 'copy') {
             if(currentRecordObj) {
@@ -22,15 +22,16 @@ define(["N/search", "N/record", "N/url", "N/https"], function(search, record, ur
                         if(poObj.custbody_requestor.length > 0) {
                             var requestorId = poObj.custbody_requestor[0].value;
                             if(requestorId) {
-                                currentRecordObj.setValue({fieldId: 'custbody11', value: requestorId});
+                                currentRecordObj.setValue({fieldId: 'custbody11_2', value: requestorId});
                             }
                         }
                     }
                 }
                 else {
-                    currentRecordObj.setValue({fieldId: 'custbody10', value: ''});
-                    currentRecordObj.setValue({fieldId: 'custbody_pr_approval_flow', value: ''});
+                    currentRecordObj.setValue({fieldId: 'custbody10_2', value: ''});
+                    
                 }
+                currentRecordObj.setValue({fieldId: 'custbody_pr_approval_flow', value: ''});
             }
         }
     }
@@ -66,7 +67,7 @@ define(["N/search", "N/record", "N/url", "N/https"], function(search, record, ur
        
         //console.log(context.fieldId);
         
-        if(!billFromPo && context.fieldId == "custbody11") {
+        if(!billFromPo && context.fieldId == "custbody11_2") {
             var requestorId    = currentRecObj.getValue({fieldId: context.fieldId});
             var prApprovalFlowRec = currentRecObj.getValue({fieldId: 'custbody_pr_approval_flow'});
             if(!prApprovalFlowRec) {
@@ -152,6 +153,7 @@ define(["N/search", "N/record", "N/url", "N/https"], function(search, record, ur
 
                 if(billCreatorId) {
                     var empObj = search.lookupFields({type: 'employee', id: billCreatorId, columns: ['custentity_yil_alwd_toler_bill']});
+                    console.log(empObj);
                     var empTolerance = empObj.custentity_yil_alwd_toler_bill;
                     if(empTolerance) {
                         if(empTolerance.indexOf("%") > 0) {
@@ -231,7 +233,7 @@ define(["N/search", "N/record", "N/url", "N/https"], function(search, record, ur
                 var classText       = recObj.getText({fieldId: 'class'});
                 var lineCount       = recObj.getLineCount({sublistId: 'item'});
                 var expLineCount    = recObj.getLineCount({sublistId: 'expense'});
-                var requestorId     = recObj.getValue({fieldId: 'custbody11'});
+                var requestorId     = recObj.getValue({fieldId: 'custbody11_2'});
                 var preparerId      = recObj.getValue({fieldId: 'custbody_creator'})
 
                 if(!preparerId) {

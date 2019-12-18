@@ -25,7 +25,7 @@ define(['N/runtime', 'N/record', 'N/search', 'N/redirect', 'N/ui/serverWidget'],
 
         if(context.type == context.UserEventType.VIEW) {
             
-            form.clientScriptModulePath  = "SuiteScripts/YIL_Purchase_Order_CL.js";
+            form.clientScriptModulePath  = "SuiteBundles/Bundle 307741/YIL_Purchase_Order_CL.js";
             
             if(status == 1) {   //1 : Pending Approval
                 if(!prApprovalFlowRec) {

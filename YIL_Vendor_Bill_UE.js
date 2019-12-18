@@ -21,7 +21,7 @@
 
         if(context.type == context.UserEventType.VIEW) {
             
-            form.clientScriptModulePath  = "SuiteScripts/YIL_Vendor_Bill_CL.js";
+            form.clientScriptModulePath  = "SuiteBundles/Bundle 307741/YIL_Vendor_Bill_CL.js";
             
             //Standalone Bill
             if(!billCreatedFrom) {

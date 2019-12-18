@@ -231,12 +231,12 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
     
                             var vendorBillObj = record.load({type: 'vendorbill', id: vendorBillId});
                             if(vendorBillObj) {
-                                requestorId = vendorBillObj.getValue({fieldId: 'custbody11'});
+                                requestorId = vendorBillObj.getValue({fieldId: 'custbody11_2'});
                                 preparerId  = vendorBillObj.getValue({fieldId: 'custbody_creator'});
                                 vendorBillObj.setValue({fieldId: 'custbody_rejection_justifctn', value: reasonText.toString()});
                                 vendorBillObj.setValue({fieldId: 'custbody_pr_approval_status', value: "Rejected."});
                                 vendorBillObj.setValue({fieldId: 'approvalstatus', value: 3});
-                                vendorBillObj.setValue({fieldId: 'custbody10', value: 3});
+                                vendorBillObj.setValue({fieldId: 'custbody10_2', value: 3});
                                 updatedVendBillId = vendorBillObj.save();
                             }
                         }
@@ -286,8 +286,8 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                         billId = billRecObj.id;
                         tranIdText = billRecObj.getValue({fieldId: 'transactionnumber'});
                         billApprovalStatus = billRecObj.getValue({fieldId: 'approvalstatus'});
-                        requestorName = billRecObj.getText({fieldId: 'custbody11'});
-                        customApproverId = billRecObj.getValue({fieldId: 'custbody11'});
+                        requestorName = billRecObj.getText({fieldId: 'custbody11_2'});
+                        customApproverId = billRecObj.getValue({fieldId: 'custbody11_2'});
                         preparerName = billRecObj.getText({fieldId: 'custbody_creator'});
                         billCreatorId = billRecObj.getValue({fieldId: 'custbody_creator'});
                         vendorName = billRecObj.getText({fieldId: 'entity'});
@@ -305,7 +305,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                         }
                         else {
                             billRecObj.setValue({fieldId: 'approvalstatus', value: 2});
-                            billRecObj.setValue({fieldId: 'custbody10', value: 2});
+                            billRecObj.setValue({fieldId: 'custbody10_2', value: 2});
                             var updatedBillId = billRecObj.save();
                             if(updatedBillId) {
                                 _sendBillApprovedEmailToCreator(updatedBillId, tranIdText, requestorName, customApproverId, preparerName, billCreatorId, vendorName, totalAmount, poTableString);
@@ -343,8 +343,8 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                         var billApprovalStatus = '', tranIdText = '', requestorName = '', customApproverId = '', billCreatorId = '', preparerName = '', vendorName  = '', totalAmount = '', departnmentName = '', className = '';
                         tranIdText = billRecObj.getValue({fieldId: 'transactionnumber'});
                         billApprovalStatus = billRecObj.getValue({fieldId: 'approvalstatus'});
-                        requestorName = billRecObj.getText({fieldId: 'custbody11'});
-                        customApproverId = billRecObj.getValue({fieldId: 'custbody11'});
+                        requestorName = billRecObj.getText({fieldId: 'custbody11_2'});
+                        customApproverId = billRecObj.getValue({fieldId: 'custbody11_2'});
                         preparerName = billRecObj.getText({fieldId: 'custbody_creator'});
                         billCreatorId = billRecObj.getValue({fieldId: 'custbody_creator'});
                         vendorName = billRecObj.getText({fieldId: 'entity'});
@@ -353,7 +353,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                         poTableString += _getItemAndExpenseTable(billRecObj);
 
                             billRecObj.setValue({fieldId: 'approvalstatus', value: 3});
-                            billRecObj.setValue({fieldId: 'custbody10', value: 3});
+                            billRecObj.setValue({fieldId: 'custbody10_2', value: 3});
                             billRecObj.setValue({fieldId: 'custbody_rejection_justifctn', value: reasonText});
 
                             var updatedBillId = billRecObj.save();
@@ -644,7 +644,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                                     if(vbRecObj) {
                                         if(allStatues.indexOf("1") < 0 && allStatues.indexOf("0") < 0) {
                                             vbRecObj.setValue({fieldId: 'approvalstatus', value: 2});
-                                            vbRecObj.setValue({fieldId: 'custbody10', value: 2});
+                                            vbRecObj.setValue({fieldId: 'custbody10_2', value: 2});
                                             vbRecObj.setValue({fieldId: 'custbody_pr_approval_status', value: "All Levels Approved."});
                                         }
                                         else {
@@ -851,7 +851,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
 
     function _pendingApprovalEmailTemplate(vendorBillId, updatedPRId, sendEmailTo, emailNxtLevelAtt, prevApproverTableString) {
 
-        //Procurement, Zume Inc 49191
+        //Procurement, Zume Inc 60252
         //var fileObj = render.transaction({entityId: Number(vendorBillId), printMode: render.PrintMode.PDF, isCustLocale: true});
         
         var billTableString = "";
@@ -863,7 +863,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
         var tranIdText = '', requestorName = '', preparerName = '', vendorName  = '', totalAmount = '', departnmentName = '', className = '';
         if(vendBillObj) {
             tranIdText = vendBillObj.getValue({fieldId: 'transactionnumber'});
-            requestorName = vendBillObj.getText({fieldId: 'custbody11'});
+            requestorName = vendBillObj.getText({fieldId: 'custbody11_2'});
             preparerName = vendBillObj.getText({fieldId: 'custbody_creator'});
             vendorName = vendBillObj.getText({fieldId: 'entity'});
             totalAmount = vendBillObj.getValue({fieldId: 'total'});
@@ -927,14 +927,14 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
 
             bodyString += "         <br/><br/>";
 
-            bodyString += "         <a href='"+approveURLParam+"'><img src='http://shopping.na0.netsuite.com/core/media/media.nl?id=16030&c=4879077_SB1&h=96a3cf9a7b52344b900a' border='0' alt='Accept' style='width: 60px;'/></a>";
-            bodyString += "         <a href='"+rejectURLParam+"'><img src='http://shopping.na0.netsuite.com/core/media/media.nl?id=16029&c=4879077_SB1&h=e05cf731ab1ecfb3cdbc' border='0' alt='Reject' style='width: 60px;'/></a>";
+            bodyString += "         <a href='"+approveURLParam+"'><img src=https://4879077-sb2.app.netsuite.com/core/media/media.nl?id=22152&c=4879077_SB2&h=9b1dfbb416b36a702a24&expurl=T' border='0' alt='Accept' style='width: 60px;'/></a>";
+            bodyString += "         <a href='"+rejectURLParam+"'><img src='https://4879077-sb2.app.netsuite.com/core/media/media.nl?id=22151&c=4879077_SB2&h=65142f106e82b6703fdb&expurl=T' border='0' alt='Reject' style='width: 60px;'/></a>";
             bodyString += "         <br/><br/>Thank you<br/>Admin";
             bodyString += "     </body>";
             bodyString += " </html>";
             
             var emailObj = email.send({
-                author: 49191,
+                author: 60252,
                 recipients: emailToId,
                 subject: emailSubject,
                 body: bodyString,
@@ -945,7 +945,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
     }
 
     function _sendRejectionEmail(vendorBillId, requestorId, preparerId, reasonText, prevApproverTableString) {
-        //Procurement, Zume Inc 49191
+        //Procurement, Zume Inc 60252
         //var fileObj = render.transaction({entityId: Number(vendorBillId), printMode: render.PrintMode.PDF, isCustLocale: true});
         var bodyString = "";
         var poTableString = "";
@@ -969,7 +969,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
         var tranIdText = '', requestorName = '', preparerName = '', vendorName  = '', totalAmount = '', departnmentName = '', className = '';
         if(vendorBillObj) {
             tranIdText = vendorBillObj.getValue({fieldId: 'transactionnumber'});
-            requestorName = vendorBillObj.getText({fieldId: 'custbody11'});
+            requestorName = vendorBillObj.getText({fieldId: 'custbody11_2'});
             preparerName = vendorBillObj.getText({fieldId: 'custbody_creator'});
             vendorName = vendorBillObj.getText({fieldId: 'entity'});
             totalAmount = vendorBillObj.getValue({fieldId: 'total'});
@@ -1017,7 +1017,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
             bodyString += " </html>";
 
         var emailObj = email.send({
-                author: 49191,
+                author: 60252,
                 recipients: [requestorId, preparerId],
                 subject: emailSubject,
                 body: bodyString,
@@ -1040,8 +1040,8 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
        var tranIdText = '', requestorId = '', requestorName = '', preparerId = '', preparerName = '', vendorName  = '', totalAmount = '', departnmentName = '', className = '';
         if(vbRecObj) {
             tranIdText = vbRecObj.getValue({fieldId: 'transactionnumber'});
-            requestorId = vbRecObj.getValue({fieldId: 'custbody11'});
-            requestorName = vbRecObj.getText({fieldId: 'custbody11'});
+            requestorId = vbRecObj.getValue({fieldId: 'custbody11_2'});
+            requestorName = vbRecObj.getText({fieldId: 'custbody11_2'});
             preparerId = vbRecObj.getValue({fieldId: 'custbody_creator'});
             preparerName = vbRecObj.getText({fieldId: 'custbody_creator'});
             vendorName = vbRecObj.getText({fieldId: 'entity'});
@@ -1100,7 +1100,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
         bodyString += " </html>";
 
         var emailObj = email.send({
-                author: 49191,
+                author: 60252,
                 recipients: [requestorId, preparerId],
                 subject: emailSubject,
                 body: bodyString,
@@ -1144,14 +1144,14 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
 
             bodyString += "         <br/><br/>";
 
-            bodyString += "         <a href='"+approveURLParam+"'><img src='http://shopping.na0.netsuite.com/core/media/media.nl?id=16030&c=4879077_SB1&h=96a3cf9a7b52344b900a' border='0' alt='Accept' style='width: 60px;'/></a>";
-            bodyString += "         <a href='"+rejectURLParam+"'><img src='http://shopping.na0.netsuite.com/core/media/media.nl?id=16029&c=4879077_SB1&h=e05cf731ab1ecfb3cdbc' border='0' alt='Reject' style='width: 60px;'/></a>";*/
+            bodyString += "         <a href='"+approveURLParam+"'><img src=https://4879077-sb2.app.netsuite.com/core/media/media.nl?id=22152&c=4879077_SB2&h=9b1dfbb416b36a702a24&expurl=T' border='0' alt='Accept' style='width: 60px;'/></a>";
+            bodyString += "         <a href='"+rejectURLParam+"'><img src='https://4879077-sb2.app.netsuite.com/core/media/media.nl?id=22151&c=4879077_SB2&h=65142f106e82b6703fdb&expurl=T' border='0' alt='Reject' style='width: 60px;'/></a>";*/
             bodyString += "         <br/><br/>Thank you<br/>Admin";
             bodyString += "     </body>";
             bodyString += " </html>";
             
             var emailObj = email.send({
-                author: 49191,
+                author: 60252,
                 recipients: emailToId,
                 subject: emailSubject,
                 body: bodyString,
@@ -1192,7 +1192,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
         bodyString += " </html>";
         
         var emailObj = email.send({
-            author: 49191,
+            author: 60252,
             recipients: emailToId,
             subject: emailSubject,
             body: bodyString,

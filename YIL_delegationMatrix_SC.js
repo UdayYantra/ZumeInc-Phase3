@@ -327,8 +327,8 @@ function updatePRApprovalFlow(){
                }
            }
 
-           defaultFilters_Exp.push(defaultFilters_Exp);
-           log.debug({  title: ' onRequest', details:'defaultFilters_Exp '+defaultFilters_Exp.pop()});
+           //defaultFilters_Exp.push(defaultFilters_Exp);
+           //log.debug({  title: ' onRequest', details:'defaultFilters_Exp '+defaultFilters_Exp.pop()});
            pr_approval_flowSearchObj.filterExpression  =  defaultFilters_Exp;
            var searchResultCount = pr_approval_flowSearchObj.runPaged().count;
            log.debug("****** pr_approval_flowSearchObj result count ******",searchResultCount);

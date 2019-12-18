@@ -10,6 +10,9 @@ define(['N/record', 'N/search', 'N/url', 'N/https'], function(record, search, ur
         //alert(context.mode);
         if(context.mode == "copy") {
             context.currentRecord.setValue({fieldId: 'custbody_pr_approval_flow', value: ''});
+            context.currentRecord.setValue({fieldId: 'custbody_pr_approval_status', value: ''});
+            context.currentRecord.setValue({fieldId: 'custbody_rejection_justifctn', value: ''});
+            context.currentRecord.setValue({fieldId: 'custbody_cancellation_reason', value: ''});
         }
     }
 
@@ -356,7 +359,7 @@ define(['N/record', 'N/search', 'N/url', 'N/https'], function(record, search, ur
                 var params = {'prId': recId, 'fpaapprover': fpaApproverId, 'buapprovers': buDprtClsAprvArr.toString()};
                 var suiteUrl = url.resolveScript({scriptId: 'customscript_yil_pr_approval_flow_sl', deploymentId: 'customdeploy_yil_pr_approval_flow_sl', params: params});
                 var response = https.get({url: suiteUrl});
-                
+                console.log('response ->' + response.body);
                 if(response.body == 'true') {
                     window.location.reload();
                 }

@@ -121,7 +121,7 @@
 
     function _pendingApprovalEmailTemplateDelegated(purchaseRequestId, updatedPRId, sendEmailTo, emailNxtLevelAtt, newFromEmpName, fromDate, toDate) {
 
-        //Procurement, Zume Inc 49191
+        //Procurement, Zume Inc 60252
         //var fileObj = render.transaction({entityId: Number(purchaseRequestId), printMode: render.PrintMode.PDF, isCustLocale: true});
         var bodyString = "";
         var poTableString = "";
@@ -186,14 +186,14 @@
             bodyString += "         <b>Note:</b> Upon rejection system will ask for 'Reason for Rejection'.";
 
             bodyString += "         <br/><br/>";
-            bodyString += "         <a href='"+approveURLParam+"'><img src='http://shopping.na0.netsuite.com/core/media/media.nl?id=16030&c=4879077_SB1&h=96a3cf9a7b52344b900a' border='0' alt='Accept' style='width: 60px;'/></a>";
-            bodyString += "         <a href='"+rejectURLParam+"'><img src='http://shopping.na0.netsuite.com/core/media/media.nl?id=16029&c=4879077_SB1&h=e05cf731ab1ecfb3cdbc' border='0' alt='Reject' style='width: 60px;'/></a>";
+            bodyString += "         <a href='"+approveURLParam+"'><img src='https://4879077-sb2.app.netsuite.com/core/media/media.nl?id=22152&c=4879077_SB2&h=9b1dfbb416b36a702a24&expurl=T' border='0' alt='Accept' style='width: 60px;'/></a>";
+            bodyString += "         <a href='"+rejectURLParam+"'><img src='https://4879077-sb2.app.netsuite.com/core/media/media.nl?id=22151&c=4879077_SB2&h=65142f106e82b6703fdb&expurl=T' border='0' alt='Reject' style='width: 60px;'/></a>";
             bodyString += "         <br/><br/>Thank you<br/>Admin";
             bodyString += "     </body>";
             bodyString += " </html>";
             
             var emailObj = email.send({
-                author: 49191,
+                author: 60252,
                 recipients: emailToId,
                 subject: emailSubject,
                 body: bodyString,
