@@ -198,7 +198,7 @@ function(search, record, runtime, format, url, encode, email) {
              // log.debug({  title: ' onRequest', details:'temp_POLevelId '+temp_POLevelId});
               // create the saved search to get the PR approval record to update and 
                var prapproval_SearchObj = search.load({
-                      id : "customsearch1040"
+                      id : "customsearch_pr_pending_approval_del"
                    });
                //Copy the filters from objSearch into defaultFilters
               var defaultFilters = prapproval_SearchObj.filters;
@@ -303,9 +303,9 @@ function updatePRApprovalFlow(){
         // loop to go through all the delegation matrix record
         for(var del = 0 ; del< DelegationMatrix.ID.length; del++){
           var prIdLevelId = '';
-            // load the PR Approval Flow search with search id 'customsearch1036' // need to chnange the search id
+            // load the PR Approval Flow search with search id 'customsearch_pr_pending_approval_del' // need to chnange the search id
            var pr_approval_flowSearchObj = search.load({
-                  id : "customsearch1036"
+                  id : "customsearch_pr_pending_approval_del"
                });
            var a_affectedTran = [];
            var flt = [2,3];
@@ -327,8 +327,8 @@ function updatePRApprovalFlow(){
                }
            }
 
-           //defaultFilters_Exp.push(defaultFilters_Exp);
-           //log.debug({  title: ' onRequest', details:'defaultFilters_Exp '+defaultFilters_Exp.pop()});
+           defaultFilters_Exp.push(defaultFilters_Exp);
+           log.debug({  title: ' onRequest', details:'defaultFilters_Exp '+defaultFilters_Exp.pop()});
            pr_approval_flowSearchObj.filterExpression  =  defaultFilters_Exp;
            var searchResultCount = pr_approval_flowSearchObj.runPaged().count;
            log.debug("****** pr_approval_flowSearchObj result count ******",searchResultCount);
