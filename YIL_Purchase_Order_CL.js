@@ -239,7 +239,7 @@ define(['N/record', 'N/search', 'N/url', 'N/https'], function(record, search, ur
                         }
                     }
                     
-                    if(!errorEncountered) {
+                    /*if(!errorEncountered) {
                         var buSearchTmpFlt  = [];
                         var buSearchFlt  = [];
                         var buSearchClm  = [];
@@ -344,7 +344,7 @@ define(['N/record', 'N/search', 'N/url', 'N/https'], function(record, search, ur
 
                         //console.log('departClassIdsArr -> '+ departClassIdsArr);
                         //console.log('buDprtClsAprvArr -> '+ buDprtClsAprvArr);
-                    }
+                    }*/
 
             }
 
@@ -353,10 +353,10 @@ define(['N/record', 'N/search', 'N/url', 'N/https'], function(record, search, ur
             }
             else {
                 
-                //console.log('fpaApproverId -> '+fpaApproverId);
+                console.log('fpaApproverId -> '+fpaApproverId);
                 //console.log('buDprtClsAprvArr -> '+buDprtClsAprvArr);
                 //alert('Reached Here..Good to process for submission.');
-                var params = {'prId': recId, 'fpaapprover': fpaApproverId, 'buapprovers': buDprtClsAprvArr.toString()};
+                var params = {'prId': recId, 'fpaapprover': fpaApproverId};
                 var suiteUrl = url.resolveScript({scriptId: 'customscript_yil_pr_approval_flow_sl', deploymentId: 'customdeploy_yil_pr_approval_flow_sl', params: params});
                 var response = https.get({url: suiteUrl});
                 console.log('response ->' + response.body);

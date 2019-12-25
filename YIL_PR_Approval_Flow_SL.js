@@ -22,11 +22,11 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
 
             var purchaseReqId = requestObj.parameters['prId'];
             var fpaApproverId = requestObj.parameters['fpaapprover'];
-            var buApproverIds = requestObj.parameters['buapprovers'];
+            //var buApproverIds = requestObj.parameters['buapprovers'];
             
             log.debug({title: 'purchaseReqId', details: purchaseReqId});
             log.debug({title: 'Fpa Approvers', details: fpaApproverId});
-            log.debug({title: 'BU Approvers', details: buApproverIds});
+            //log.debug({title: 'BU Approvers', details: buApproverIds});
 
             try {
                 
@@ -286,8 +286,8 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                     //*********************************************** Step 4 : Business Unit *******************************************************/
                             var buStartNo = 0;
                             var buEndNo   = 0;
-
-                            if(buApproverIds) {
+                           
+                            /*if(buApproverIds) {
                                 var buApproverIdsArr = buApproverIds.split(",");
                                 var buLevelesString     = nextLevelCount+",";
                                 buStartNo = nextLevelCount;
@@ -323,7 +323,7 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                                 }
                                 buLevelesString += nextLevelCount-1;
                                 buEndNo = nextLevelCount-1;
-                            }
+                            }*/
                             
                     //*********************************************** Step 5 : COO, CFO, CEO, .... *******************************************************/
                     
@@ -353,14 +353,14 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                                     nextLevelCount++;
                                     
                                     prRecordObj.setValue({fieldId: nextApproverField, value: nxtApproverId});
-                                    log.debug({title: 'C-Level Approver['+bua+']', details: nxtApproverId});
+                                    //log.debug({title: 'C-Level Approver['+bua+']', details: nxtApproverId});
                                     _nextApproversStatusSet(prRecordObj, allApprovers, allApproversStatus, sendEmailToArr, emailNxtLevelAtt, nxtApproverId, nextApprovalStatusField, nextApprovalSkipField, emalNxtLvl, preparerId);
                                 
                                 }
                             }
                             
                             nextLevelCount--;
-                            prRecordObj.setValue({fieldId: 'custrecord_bu_approvar_level_no', value: buLevelesString});
+                            //prRecordObj.setValue({fieldId: 'custrecord_bu_approvar_level_no', value: buLevelesString});
                             prRecordObj.setValue({fieldId: 'custrecord_no_of_level', value: nextLevelCount});
                             prRecordObj.setValue({fieldId: 'custrecord_purchase_req', value: purchaseReqId});
 
@@ -388,17 +388,17 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                                 }
                             }//for(slv=1;slv<=nextLevelCount;slv++)
 
-                            if(Number(pendAprvlLvl) >= Number(buStartNo) && Number(pendAprvlLvl) <= Number(buEndNo)) {
+                            /*if(Number(pendAprvlLvl) >= Number(buStartNo) && Number(pendAprvlLvl) <= Number(buEndNo)) {
                                 custPRApprovalStatus = "Pending Approval from BU.";
                             }
-                            else {
+                            else {*/
                                 var pendAprvlEmpObj = search.lookupFields({type:search.Type.EMPLOYEE, id: stautsEmpId, columns: ['custentity1']});
                                 //log.debug({title: "pendAprvlEmpObj", details: JSON.stringify(pendAprvlEmpObj)});
                                 if(pendAprvlEmpObj.custentity1[0]) {
                                     var empDesignation = pendAprvlEmpObj.custentity1[0].text;
                                     custPRApprovalStatus = "Pending Approval from "+empDesignation;
                                 }
-                            }
+                            //}
 
                     var prId = prRecordObj.save();
                     log.debug({title: 'PR Approval Id', details: prId});
