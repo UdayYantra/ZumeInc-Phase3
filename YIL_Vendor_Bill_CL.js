@@ -4,7 +4,7 @@
  * 
  */
 
-define(["N/search", "N/record", "N/url", "N/https"], function(search, record, url, https) {
+define(["N/search", "N/record", "N/url", "N/https", "N/runtime"], function(search, record, url, https, runtime) {
 
     function pageInit(scriptContext) {
 
@@ -97,7 +97,7 @@ define(["N/search", "N/record", "N/url", "N/https"], function(search, record, ur
 
     function validateLine(context) {
 
-        if(context.sublistId == "item" || context.sublistId == "expense") {
+        if(context.sublistId == "item") {
 
             var currentRecObj = context.currentRecord;
             var billFromPo      = currentRecObj.getValue({fieldId: 'custbody_ode_billcreatedfrom'});
@@ -138,28 +138,81 @@ define(["N/search", "N/record", "N/url", "N/https"], function(search, record, ur
         var approvedBillTotal = 0.00;
         var poAmount            = 0.00;
         var poAmountWithTolerance = 0.00;
+        var poAmountWithTolerancePerc = 0.00;
+        var poAmountWithToleranceAmt = 0.00;
         var totalBillAmount = 0.00;
+        var approvedBillItemTotal = 0.00;
+        var approvedBillExpenseTotal = 0.00;
 
         if(currentRecObj) {
         
-            currentBillTotal = currentRecObj.getValue({fieldId: 'total'});
+            currentBillTotal = currentRecObj.getValue({fieldId: 'total'});        
+            log.debug("currentBillTotal: ",currentBillTotal);            
             currentBillId    = currentRecObj.id;
             poInternalId     = currentRecObj.getValue({fieldId: 'custbody_ode_billcreatedfrom'});
             billCreatorId    = currentRecObj.getValue({fieldId: 'custbody_creator'});
+            var scriptObj = runtime.getCurrentScript();
+            var paramExpCat = scriptObj.getParameter({name: 'custscript_exp_cat_exclude_frm_tolerance'});           
+            log.debug("paramExpCat: ",paramExpCat);
 
+            var expenseLineCount = currentRecObj.getLineCount('expense');
+            log.debug('expenseLineCount :',expenseLineCount);        
+
+            if(expenseLineCount)
+            {
+                for(var p = 0;p<expenseLineCount;p++)
+                {            
+                    //var finalStorageTemp = '';
+                    currentRecObj.selectLine({sublistId: 'expense',line: p});
+                    var LineExpense = currentRecObj.getSublistValue({sublistId: 'expense',fieldId: 'category',line: p});  
+                    log.debug('LineExpense :',LineExpense); 
+                    if(LineExpense == 53)   
+                    {
+                        var LineExpenseAmt = currentRecObj.getSublistValue({sublistId: 'expense',fieldId: 'amount',line: p}); 
+                        currentBillTotal = currentBillTotal - Number(LineExpenseAmt);
+                        log.debug('currentBillTotal In:',currentBillTotal); 
+                    }            
+                }
+            }
+            
             if(poInternalId) {
 
                 var tolerancePerc = 0.0;
+                var toleranceAmt =0.0;
+                var baseTolerancePerc = 0.0;
+
 
                 if(billCreatorId) {
-                    var empObj = search.lookupFields({type: 'employee', id: billCreatorId, columns: ['custentity_yil_alwd_toler_bill']});
-                    console.log(empObj);
-                    var empTolerance = empObj.custentity_yil_alwd_toler_bill;
-                    if(empTolerance) {
-                        if(empTolerance.indexOf("%") > 0) {
-                            empTolerance = empTolerance.substring(0,empTolerance.length-1);
+                   // var empObj = search.lookupFields({type: 'employee', id: billCreatorId, columns: ['custentity_yil_alwd_toler_bill']});
+                   // var empTolerance = empObj.custentity_yil_alwd_toler_bill;
+                 //***************** Code added by Prashant Lokhande Date: 02/01/2020 ******************/  
+                   var customrecord_yil_bill_toleranceSearchObj = search.create({
+                    type: "customrecord_yil_bill_tolerance",
+                    filters:
+                    [
+                       ["custrecord_yil_tolerance_subsidiary","anyof","6"]
+                    ],
+                    columns:
+                    [
+                       search.createColumn({name: "custrecord_yil_tolerance_percentage", label: "Tolerance Percentage"}),
+                       search.createColumn({name: "custrecord_yil_tolerance_amount", label: "Tolerance Amount"})
+                    ]
+                 });
+                 var searchResultCount = customrecord_yil_bill_toleranceSearchObj.runPaged().count;
+                 log.debug("customrecord_yil_bill_toleranceSearchObj result count",searchResultCount);
+                 customrecord_yil_bill_toleranceSearchObj.run().each(function(result){
+                    baseTolerancePerc = result.getValue({name: 'custrecord_yil_tolerance_percentage'});   
+                    toleranceAmt = result.getValue({name: 'custrecord_yil_tolerance_amount'});
+                    return true;
+                 });
+                 //***************** End Code added by Prashant Lokhande Date: 02/01/2020 ******************/  
+
+                    if(baseTolerancePerc) {
+                        if(baseTolerancePerc.indexOf("%") > 0) {
+                            baseTolerancePerc = baseTolerancePerc.substring(0,baseTolerancePerc.length-1);
                         }
-                        tolerancePerc = empTolerance;
+                        tolerancePerc = baseTolerancePerc;
+                        //alert('tolerancePerc'+tolerancePerc);
                     }
                 }
                 //console.log('tolerancePerc -> '+tolerancePerc);
@@ -168,61 +221,104 @@ define(["N/search", "N/record", "N/url", "N/https"], function(search, record, ur
                     var poObj = search.lookupFields({type: 'purchaseorder', id: poInternalId, columns: ['total']});
                     var poAmount = poObj.total;
                     if(poAmount) {
-                        poAmountWithTolerance = Number(poAmount) + Number(poAmount*(tolerancePerc/100));
+                        poAmountWithTolerancePerc = Number(poAmount) + Number(poAmount*(tolerancePerc/100));
+                        poAmountWithToleranceAmt = Number(toleranceAmt);
+                        //alert('poAmountWithTolerancePerc = '+poAmountWithTolerancePerc);
+                        //alert('poAmountWithToleranceAmt = '+poAmountWithToleranceAmt);
+
+                        if(poAmountWithTolerancePerc < poAmountWithToleranceAmt)
+                            poAmountWithTolerance = poAmountWithTolerancePerc;
+                        else
+                            poAmountWithTolerance = poAmountWithToleranceAmt;                            
                     }
                 }
                 //console.log('poAmount -> '+poAmount);
                 //console.log('poAmountWithTolerance -> '+poAmountWithTolerance);
                 
-    
+                var LineItem = '';
+                var LineExpense = '';
                 var billSearchFlt   = [];
                 var billSearchClm   = [];
                 
                 if(currentBillId) { billSearchFlt.push(search.createFilter({name: 'internalid', operator: search.Operator.NONEOF, values: currentBillId})); }
                 if(poInternalId)  { billSearchFlt.push(search.createFilter({name: 'custbody_ode_billcreatedfrom', operator: search.Operator.ANYOF, values: poInternalId}))};
-                billSearchFlt.push(search.createFilter({name: 'mainline', operator: search.Operator.IS, values: true}));
+                billSearchFlt.push(search.createFilter({name: 'mainline', operator: search.Operator.IS, values: false}));
                 billSearchFlt.push(search.createFilter({name: 'approvalstatus', operator: search.Operator.NONEOF, values: 3}));
                 
-                billSearchClm.push(search.createColumn({name: 'total', summary: search.Summary.SUM}));
-    
-                var billSearchRes = search.create({type: 'vendorbill', filters: billSearchFlt, columns: billSearchClm});
-    
+                //billSearchClm.push(search.createColumn({name: 'total', summary: search.Summary.SUM}));
+                billSearchClm.push(search.createColumn({name: 'item'}));
+                billSearchClm.push(search.createColumn({name: 'expensecategory'}));
+                billSearchClm.push(search.createColumn({name: 'amount'}));
+                    
+                var billSearchRes = search.create({type: 'vendorbill', filters: billSearchFlt, columns: billSearchClm});   
+
                 if(billSearchRes.runPaged().count > 0) {
     
                     billSearchRes.run().each(function(result) {
-                        approvedBillTotal = Number(approvedBillTotal) + Number(result.getValue({name: 'total' ,summary: search.Summary.SUM})).toFixed(2);
+                        LineItem = result.getValue({name: 'item'});
+                        //alert('LineItem = '+LineItem);
+                        LineExpense = result.getValue({name: 'expensecategory'});
+                        //alert('LineExpense = '+LineExpense);
+
+                        if(_logValidation(LineItem))
+                            approvedBillItemTotal += Number(result.getValue({name: 'amount'}));
+                        if(_logValidation(LineExpense))
+                            approvedBillExpenseTotal += Number(result.getValue({name: 'amount'}));    
+                        //alert('approvedBillItemTotal = '+approvedBillItemTotal);
+                        //alert('approvedBillExpenseTotal = '+approvedBillExpenseTotal);
+                        return true;                
                     });
+                    //alert('approvedBillItemTotalFinal = '+approvedBillItemTotal);
+                    //alert('approvedBillExpenseTotalFinal = '+approvedBillExpenseTotal);
+                    approvedBillTotal = Number(approvedBillItemTotal) + Number(approvedBillExpenseTotal);
     
                 }//if(billSearchRes.runPaged().count > 0)
     
                 //console.log('currentBillTotal -> '+currentBillTotal);
                 //console.log('approvedBillTotal -> '+approvedBillTotal);
-    
-                totalBillAmount = Number(approvedBillTotal) + Number(currentBillTotal);
-    
+                //alert('currentBillTotal = '+currentBillTotal);
+                //alert('approvedBillTotal = '+approvedBillTotal);
+                totalBillAmount = Number(approvedBillTotal) + Number(currentBillTotal);                
+                //alert('poAmountWithTolerance = '+poAmountWithTolerance);
+                //alert('totalBillAmount = '+totalBillAmount);
+                log.debug('totalBillAmount -> ',totalBillAmount);
+                log.debug('poAmountWithTolerance -> ',poAmountWithTolerance);
                 if(Number(totalBillAmount) > Number(poAmountWithTolerance)) {
                     alert("Vendor Bill over tolerance can not be created.");
                     return false;
                 }
             }
-
-
         }
-
         return true;
 
     }
 
     function submitApprovalFun(recId) {
         
-        
+        var scriptObj = runtime.getCurrentScript();
 
         if(recId != null) {
             var prRecId
             var errorEncountered    = false;
             var errorMessage        = '';
             var fpaApproverId       = '';
+            var hocApproverId       = '';
             var buApproversArr      = [];
+            var fpaThresholdAmt     = 0.00;
+            var hocThresholdAmt     = 0.00;
+            
+            fpaThresholdAmt = scriptObj.getParameter({name: 'custscript_fpa_threshold_amt'});
+            hocThresholdAmt = scriptObj.getParameter({name: 'custscript_hoc_threshold_amt'});
+            //alert('fpaThresholdAmt ->'+fpaThresholdAmt);
+            //alert('hocThresholdAmt ->'+hocThresholdAmt);
+            
+            if(!fpaThresholdAmt) {
+                fpaThresholdAmt = 0.00;
+            }
+            
+            if(!hocThresholdAmt) {
+                hocThresholdAmt = 0.00;
+            }
 
             var recObj = record.load({type: 'vendorbill', id: recId});
             if(recObj != null) {
@@ -234,7 +330,8 @@ define(["N/search", "N/record", "N/url", "N/https"], function(search, record, ur
                 var lineCount       = recObj.getLineCount({sublistId: 'item'});
                 var expLineCount    = recObj.getLineCount({sublistId: 'expense'});
                 var requestorId     = recObj.getValue({fieldId: 'custbody11_2'});
-                var preparerId      = recObj.getValue({fieldId: 'custbody_creator'})
+                var preparerId      = recObj.getValue({fieldId: 'custbody_creator'});
+                var billAmount      = recObj.getValue({fieldId: 'total'});
 
                 if(!preparerId) {
                     errorMessage = "Please select the 'Preparer' field value in order to  submit for approval.";
@@ -276,6 +373,8 @@ define(["N/search", "N/record", "N/url", "N/https"], function(search, record, ur
                         fpaSearchFlt.push(search.createFilter({name: 'custrecord_class', operator: search.Operator.ANYOF, values: classId}));
                         fpaSearchFlt.push(search.createFilter({name: 'isinactive', operator: search.Operator.IS, values: false}));
                         fpaSearchClm.push(search.createColumn({name: 'custrecord_fp_a_approver'}));
+                        fpaSearchClm.push(search.createColumn({name: 'custrecord_hoc_approver'}));
+
                         fpaSearchRes = search.create({type: 'customrecord_fpa_bu_approver', filters: fpaSearchFlt, columns: fpaSearchClm});
     
                         //console.log('Reached Here');
@@ -284,25 +383,42 @@ define(["N/search", "N/record", "N/url", "N/https"], function(search, record, ur
                             
                             fpaSearchRes.run().each(function(result) {
                                 //log.debug({title: "FP&A Approver", details: result.getValue({name: 'custrecord_fp_a_approver'})});
-                                if(!fpaApproverId) {
-                                    fpaApproverId = result.getValue({name: 'custrecord_fp_a_approver'});
+                                if(Number(billAmount) >= Number(fpaThresholdAmt)) {
+                                    if(!fpaApproverId) {
+                                        fpaApproverId = result.getValue({name: 'custrecord_fp_a_approver'});
+                                    }
                                 }
+                                if(Number(billAmount) >= Number(hocThresholdAmt)) {
+                                    if(!hocApproverId) {
+                                        hocApproverId = result.getValue({name: 'custrecord_hoc_approver'});
+                                    }
+                                }
+                                
                                 return true;
                             });
-                            if(!fpaApproverId) {
-                                errorEncountered    = true;
-                                errorMessage        = 'FP&A is not defined for department "'+departmentIText+'" and class "'+classText+'". Please do the needful.';
+                            if(Number(billAmount) > Number(fpaThresholdAmt)) {
+                                if(!fpaApproverId) {
+                                    errorEncountered    = true;
+                                    errorMessage        = 'FP&A Approver is not defined for department "'+departmentIText+'" and class "'+classText+'". Please do the needful.';
+                                }
                             }
+                            if(Number(billAmount) > Number(hocThresholdAmt)) {
+                                if(!hocApproverId) {
+                                    errorEncountered    = true;
+                                    errorMessage        = 'HOC Approver is not defined for department "'+departmentIText+'" and class "'+classText+'". Please do the needful.';
+                                }
+                            }
+                            
                         }
                         else {
                             errorEncountered    = true;
-                            errorMessage        = 'Department "'+departmentIText+'" and class "'+classText+'" combination is not available in FPA_BU Approver master record.';
+                            errorMessage        = 'Department "'+departmentIText+'" and class "'+classText+'" combination is not available in FPA_HOC Approver master record.';
                         }
 
                     }//if(!errorEncountered)
 
                 //Line Level BU Approver Validation
-                
+                /*
                     if(!errorEncountered) {
                         for(var ln=0;ln<lineCount;ln++) {
                             var lnDeprtId   = recObj.getSublistValue({sublistId: 'item', fieldId: 'department', line: ln});
@@ -431,7 +547,7 @@ define(["N/search", "N/record", "N/url", "N/https"], function(search, record, ur
                         //console.log('departClassIdsArr -> '+ departClassIdsArr);
                         //console.log('buDprtClsAprvArr -> '+ buDprtClsAprvArr);
                     }
-
+                    */
             }
 
             if(errorEncountered) {
@@ -439,10 +555,11 @@ define(["N/search", "N/record", "N/url", "N/https"], function(search, record, ur
             }
             else {
                 
-                //console.log('fpaApproverId -> '+fpaApproverId);
+                console.log('fpaApproverId -> '+fpaApproverId);
+                console.log('hocApproverId -> '+hocApproverId);
                 //console.log('buDprtClsAprvArr -> '+buDprtClsAprvArr);
                 //alert('Reached Here..Good to process for submission.');
-                var params = {'billId': recId, 'fpaapprover': fpaApproverId, 'buapprovers': buDprtClsAprvArr.toString()};
+                var params = {'billId': recId, 'fpaapprover': fpaApproverId, 'hocapprover': hocApproverId};
                 var suiteUrl = url.resolveScript({scriptId: 'customscript_yil_bill_approval_flow_sl', deploymentId: 'customdeploy_yil_bill_approval_flow_sl', params: params});
                 var response = https.get({url: suiteUrl});
                 

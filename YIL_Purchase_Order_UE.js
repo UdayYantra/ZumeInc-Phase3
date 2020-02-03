@@ -13,7 +13,9 @@ define(['N/runtime', 'N/record', 'N/search', 'N/redirect', 'N/ui/serverWidget'],
         var status = recObj.getValue({fieldId: 'approvalstatus'});
         var stdStatus = recObj.getValue({fieldId: 'orderstatus'});
         var prApprovalFlowRec = recObj.getValue({fieldId: 'custbody_pr_approval_flow'});
+        var preparerId = recObj.getValue({fieldId: 'employee'})
         var userObj = runtime.getCurrentUser();
+        var scriptObj = runtime.getCurrentScript();
         var currentUserRole = userObj.role;
         var currentUserId   = userObj.id;
       
@@ -47,10 +49,13 @@ define(['N/runtime', 'N/record', 'N/search', 'N/redirect', 'N/ui/serverWidget'],
                     //Send Notification Button
                     //Admin Role and Respective User Id
                     var sendNotifBtn = form.addButton({id: 'custpage_sendnotf_btn', label: 'Send Notification', functionName: "sendNotification("+recId+","+prApprovalFlowRec+");"});
+                                        
                     
                     var backButton = form.getButton("back");
                     log.debug({title: 'BackButton', details: backButton});
-                    //backButton.isHidden = true;
+                    if(_getPOApplyingTransaction(recId)) {
+                        backButton.isHidden = true;
+                    }
 
                 }
             }
@@ -64,13 +69,25 @@ define(['N/runtime', 'N/record', 'N/search', 'N/redirect', 'N/ui/serverWidget'],
                         if(stdCloseButton) {
                             stdCloseButton.isHidden = true;
                         }
+                        //PO Cancel: Applicable only to creator and roles like 'AP Manager, FP&A Approval, Administrator'
+                        var rolesArr = [];
+                        var rolesFromParameter = scriptObj.getParameter({name: 'custscript_po_cancel_btn_role_access'});
+                        //log.debug({title: 'rolesFromParameter', details: rolesFromParameter});
+                        if(rolesFromParameter) {
+                            rolesArr = rolesFromParameter.split(",");
+                        }
+                        /*log.debug({title: 'rolesArr', details: rolesArr});
+                        log.debug({title: 'currentUserRole', details: currentUserRole});
+                        log.debug({title: 'rolesArr.indexOf(currentUserRole)', details: rolesArr.indexOf(currentUserRole.toString())});*/
+                        if(Number(preparerId) == Number(currentUserId) || (Number(rolesArr.indexOf(currentUserRole.toString())) >= 0)) {
+                            var cancelBtn = form.addButton({id: 'custpage_cancel_btn', label: 'Cancel PO', functionName: "cancelRequest("+recId+","+prApprovalFlowRec+");"});
+                        }
                         
-                        var cancelBtn = form.addButton({id: 'custpage_cancel_btn', label: 'Cancel PO', functionName: "cancelRequest("+recId+","+prApprovalFlowRec+");"});
                     }
                 }
             }
             
-            if(prApprovalFlowRec) {
+            if(prApprovalFlowRec && _getPOApplyingTransaction(recId)) {
                 var editButton = form.getButton("edit");
                 if(editButton) { editButton.isHidden = true; }
             }
@@ -79,7 +96,7 @@ define(['N/runtime', 'N/record', 'N/search', 'N/redirect', 'N/ui/serverWidget'],
             
             if(prApprovalFlowRec) {
                 log.debug({title: 'Found here', details: 'In Eidt Mode'})
-                redirect.toRecord({id: recId, type: 'purchaseorder', isEditMode: false});
+                //redirect.toRecord({id: recId, type: 'purchaseorder', isEditMode: false});
             }
             
         }
@@ -138,8 +155,68 @@ define(['N/runtime', 'N/record', 'N/search', 'N/redirect', 'N/ui/serverWidget'],
     }
     function beforeSubmit(context) {
 
+        log.debug({title: 'context.type in Before Submit', details: context.type});
+        if(context.type == context.UserEventType.CREATE) {
+
+            var recObj = context.newRecord;
+
+            recObj.setValue({fieldId: 'custbody_pr_approval_status', value: 'Pending Submission'});
+
+        }
+
     }
     function afterSubmit(context) {
+
+        var oldRecordObj = context.oldRecord;
+        var newRecordObj = context.newRecord;
+
+        if(context.type == context.UserEventType.DELETE) {
+            return true;
+        }
+        if(context.type == context.UserEventType.EDIT) {
+
+            var oldPRAmount = oldRecordObj.getValue({fieldId: 'total'});
+            var newPRAmount = newRecordObj.getValue({fieldId: 'total'});
+            var subsidiaryId = newRecordObj.getValue({fieldId: 'subsidiary'});
+
+            log.debug({title: 'oldPRAmount', details: oldPRAmount});
+            log.debug({title: 'newPRAmount', details: newPRAmount});
+
+            var poToleranceAmount = _getSubsidiarySpecificPOToleranceAmount(subsidiaryId);
+            var difference = Number(newPRAmount) - Number(oldPRAmount);
+
+            log.debug({title: 'poToleranceAmount', details: poToleranceAmount});
+            log.debug({title: 'difference', details: difference});
+
+            if(Number(oldPRAmount) != Number(newPRAmount)) {
+                //PO with no transaction's applied. - One more Condition.
+                var poApplyingTransactionFlag = _getPOApplyingTransaction(newRecordObj.id);
+
+                log.debug({title: 'poApplyingTransactionFlag', details: poApplyingTransactionFlag});
+
+                if(!poApplyingTransactionFlag) {
+                    if(Number(difference) >= Number(poToleranceAmount)) {
+
+                        var prApprovalFlowId = newRecordObj.getValue({fieldId: 'custbody_pr_approval_flow'});
+
+                        //Update the current PR with 'PR Approval Flow' to empty.
+                        var poRecObj = record.load({type: 'purchaseorder', id: newRecordObj.id});
+                        if(poRecObj) {
+                            poRecObj.setValue({fieldId: 'custbody_pr_approval_flow', value: ''});
+                            poRecObj.save();
+                        }
+
+                        //Inactivate the PR Approval Custom Record.
+                        if(prApprovalFlowId) {
+                            record.submitFields({type: 'customrecord_pr_approval_flow', id: prApprovalFlowId, values: {isinactive: true}});
+                        }
+                        
+
+                    }
+                }
+            }
+
+        }
 
     }
 
@@ -188,6 +265,58 @@ define(['N/runtime', 'N/record', 'N/search', 'N/redirect', 'N/ui/serverWidget'],
 
         return nextApprovalLevel;
 
+    }
+
+    function _getSubsidiarySpecificPOToleranceAmount(subsidiaryId) {
+
+        var poToleranceAmount = 0.00;
+        var customrecord_yil_bill_toleranceSearchObj = search.create({
+            type: "customrecord_yil_bill_tolerance",
+            filters: [ ["custrecord_yil_tolerance_subsidiary","anyof",subsidiaryId] ],
+            columns: [search.createColumn({name: "custrecord_yil_po_tolerance_amt", label: "PO Tolerance Amount"})]
+         });
+         
+         customrecord_yil_bill_toleranceSearchObj.run().each(function(result){
+            poToleranceAmount = result.getValue({name: 'custrecord_yil_po_tolerance_amt'});
+         });
+
+         return poToleranceAmount;
+
+    }
+
+    function _getPOApplyingTransaction(poId) {
+        
+        var poApplyingFlag = false;
+
+        var purchaseorderSearchObj = search.create({
+            type: "purchaseorder",
+            filters:
+            [
+               ["type","anyof","PurchOrd"], 
+               "AND", 
+               ["mainline","is","F"], 
+               "AND", 
+               ["internalidnumber","equalto",poId], 
+               "AND", 
+               ["taxline","is","F"]
+            ],
+            columns:
+            [
+               search.createColumn({name: "applyingtransaction", label: "Applying Transaction"})
+            ]
+         });
+         var searchResultCount = purchaseorderSearchObj.runPaged().count;
+         
+         purchaseorderSearchObj.run().each(function(result){
+            // .run().each has a limit of 4,000 results
+            if(!poApplyingFlag && result.getValue({name: 'applyingtransaction'})) {
+                poApplyingFlag = true;
+                return false;
+            }
+            return true;
+         });
+
+         return poApplyingFlag;
     }
 
     return {

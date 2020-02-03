@@ -4,7 +4,7 @@
  * 
  */
 
-define(['N/record', 'N/search', 'N/url', 'N/https'], function(record, search, url, https) {
+define(['N/record', 'N/search', 'N/url', 'N/https', 'N/runtime'], function(record, search, url, https, runtime) {
 
     function pageInit(context) {
         //alert(context.mode);
@@ -131,12 +131,30 @@ define(['N/record', 'N/search', 'N/url', 'N/https'], function(record, search, ur
     function submitApprovalFun(recId) {
         //alert('Reached Here...'+recId);
 
+        var scriptObj = runtime.getCurrentScript();
+
         if(recId != null) {
             var prRecId
             var errorEncountered    = false;
             var errorMessage        = '';
             var fpaApproverId       = '';
+            var hocApproverId       = '';
             var buApproversArr      = [];
+            var fpaThresholdAmt     = 0.00;
+            var hocThresholdAmt     = 0.00;
+
+            fpaThresholdAmt = scriptObj.getParameter({name: 'custscript_fpa_threshold_amt'});
+            hocThresholdAmt = scriptObj.getParameter({name: 'custscript_hoc_threshold_amt'});
+            //alert('fpaThresholdAmt ->'+fpaThresholdAmt);
+            //alert('hocThresholdAmt ->'+hocThresholdAmt);
+            
+            if(!fpaThresholdAmt) {
+                fpaThresholdAmt = 0.00;
+            }
+            
+            if(!hocThresholdAmt) {
+                hocThresholdAmt = 0.00;
+            }
 
             var recObj = record.load({type: 'purchaseorder', id: recId});
             if(recObj != null) {
@@ -148,8 +166,9 @@ define(['N/record', 'N/search', 'N/url', 'N/https'], function(record, search, ur
                 var lineCount       = recObj.getLineCount({sublistId: 'item'});
                 var expLineCount    = recObj.getLineCount({sublistId: 'expense'});
                 var requestorId     = recObj.getValue({fieldId: 'custbody_requestor'});
-                var preparerId      = recObj.getValue({fieldId: 'employee'})
-
+                var preparerId      = recObj.getValue({fieldId: 'employee'});
+                var poAmount        = recObj.getValue({fieldId: 'total'});
+                
                 if(!preparerId) {
                     errorMessage = "Please select the 'Preparer' field value in order to  submit for approval.";
                     errorEncountered = true;
@@ -190,6 +209,7 @@ define(['N/record', 'N/search', 'N/url', 'N/https'], function(record, search, ur
                         fpaSearchFlt.push(search.createFilter({name: 'custrecord_class', operator: search.Operator.ANYOF, values: classId}));
                         fpaSearchFlt.push(search.createFilter({name: 'isinactive', operator: search.Operator.IS, values: false}));
                         fpaSearchClm.push(search.createColumn({name: 'custrecord_fp_a_approver'}));
+                        fpaSearchClm.push(search.createColumn({name: 'custrecord_hoc_approver'}));
                         fpaSearchRes = search.create({type: 'customrecord_fpa_bu_approver', filters: fpaSearchFlt, columns: fpaSearchClm});
     
                         console.log('Reached Here');
@@ -198,26 +218,44 @@ define(['N/record', 'N/search', 'N/url', 'N/https'], function(record, search, ur
                             
                             fpaSearchRes.run().each(function(result) {
                                 //log.debug({title: "FP&A Approver", details: result.getValue({name: 'custrecord_fp_a_approver'})});
-                                if(!fpaApproverId) {
-                                    fpaApproverId = result.getValue({name: 'custrecord_fp_a_approver'});
+                                if(Number(poAmount) >= Number(fpaThresholdAmt)) {
+                                    if(!fpaApproverId) {
+                                        fpaApproverId = result.getValue({name: 'custrecord_fp_a_approver'});
+                                    }
                                 }
+                                if(Number(poAmount) >= Number(hocThresholdAmt)) {
+                                    if(!hocApproverId) {
+                                        hocApproverId = result.getValue({name: 'custrecord_hoc_approver'});
+                                    }
+                                }
+                                
                                 return true;
                             });
-                            if(!fpaApproverId) {
-                                errorEncountered    = true;
-                                errorMessage        = 'FP&A is not defined for department "'+departmentIText+'" and class "'+classText+'". Please do the needful.';
+                            if(Number(poAmount) > Number(fpaThresholdAmt)) {
+                                if(!fpaApproverId) {
+                                    errorEncountered    = true;
+                                    errorMessage        = 'FP&A Approver is not defined for department "'+departmentIText+'" and class "'+classText+'". Please do the needful.';
+                                }
                             }
+                            if(Number(poAmount) > Number(hocThresholdAmt)) {
+                                if(!hocApproverId) {
+                                    errorEncountered    = true;
+                                    errorMessage        = 'HOC Approver is not defined for department "'+departmentIText+'" and class "'+classText+'". Please do the needful.';
+                                }
+                            }
+                            
                         }
                         else {
                             errorEncountered    = true;
-                            errorMessage        = 'Department "'+departmentIText+'" and class "'+classText+'" combination is not available in FPA_BU Approver master record.';
+                            errorMessage        = 'Department "'+departmentIText+'" and class "'+classText+'" combination is not available in FPA_HOC Approver master record.';
                         }
 
                     }//if(!errorEncountered)
 
+                    
                 //Line Level BU Approver Validation
                 
-                    if(!errorEncountered) {
+                    /*if(!errorEncountered) {
                         for(var ln=0;ln<lineCount;ln++) {
                             var lnDeprtId   = recObj.getSublistValue({sublistId: 'item', fieldId: 'department', line: ln});
                             var lnClasId    = recObj.getSublistValue({sublistId: 'item', fieldId: 'class', line: ln});
@@ -239,7 +277,7 @@ define(['N/record', 'N/search', 'N/url', 'N/https'], function(record, search, ur
                         }
                     }
                     
-                    /*if(!errorEncountered) {
+                    if(!errorEncountered) {
                         var buSearchTmpFlt  = [];
                         var buSearchFlt  = [];
                         var buSearchClm  = [];
@@ -354,9 +392,10 @@ define(['N/record', 'N/search', 'N/url', 'N/https'], function(record, search, ur
             else {
                 
                 console.log('fpaApproverId -> '+fpaApproverId);
+                console.log('hocApproverId -> '+hocApproverId);
                 //console.log('buDprtClsAprvArr -> '+buDprtClsAprvArr);
                 //alert('Reached Here..Good to process for submission.');
-                var params = {'prId': recId, 'fpaapprover': fpaApproverId};
+                var params = {'prId': recId, 'fpaapprover': fpaApproverId, 'hocapprover':hocApproverId};
                 var suiteUrl = url.resolveScript({scriptId: 'customscript_yil_pr_approval_flow_sl', deploymentId: 'customdeploy_yil_pr_approval_flow_sl', params: params});
                 var response = https.get({url: suiteUrl});
                 console.log('response ->' + response.body);

@@ -22,11 +22,13 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
 
             var vendorBillId = requestObj.parameters['billId'];
             var fpaApproverId = requestObj.parameters['fpaapprover'];
-            var buApproverIds = requestObj.parameters['buapprovers'];
+            var hocApproverId = requestObj.parameters['hocapprover'];
+
+            //var buApproverIds = requestObj.parameters['buapprovers'];
             
             log.debug({title: 'vendorBillId', details: vendorBillId});
             log.debug({title: 'Fpa Approvers', details: fpaApproverId});
-            log.debug({title: 'BU Approvers', details: buApproverIds});
+            log.debug({title: 'hocApproverId', details: hocApproverId});
 
             try {
                 
@@ -117,7 +119,9 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                             log.debug({title: 'sendEmailToArr', details: sendEmailToArr});*/
 
                     //*********************************************** Step 2 : FP & A *******************************************************/
-                    
+                        
+                        if(fpaApproverId) {
+
                             if(DelegationMatrix.ID.length > 0) {
                                 var tempIndex = DelegationMatrix.fromEmployee.indexOf(fpaApproverId);
                                 if(tempIndex >= 0) {
@@ -142,6 +146,39 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                             
                             _nextApproversStatusSet(prRecordObj, allApprovers, allApproversStatus, sendEmailToArr, emailNxtLevelAtt, fpaApproverId, nextApprovalStatusField, nextApprovalSkipField, emalNxtLvl, preparerId);
                             
+                        }
+                         
+                        
+                    //*********************************************** Step 2.5 : HOC Approver *******************************************************/
+                            
+                        if(hocApproverId) {
+
+                            if(DelegationMatrix.ID.length > 0) {
+                                var tempIndex = DelegationMatrix.fromEmployee.indexOf(hocApproverId);
+                                if(tempIndex >= 0) {
+                                    updatedDeligationIndexArr.push(tempIndex);
+                                    hocApproverId = DelegationMatrix.toEmployee[tempIndex];
+                                    var tmpLvls = DelegationMatrix.updateLevels[tempIndex];
+                                    if(tmpLvls) {
+                                        tmpLvls += "_";
+                                    }
+                                    tmpLvls += nextLevelCount;
+                                    DelegationMatrix.updateLevels[tempIndex] = tmpLvls;
+                                }
+                            }
+
+                            log.debug({title: 'hocApproverId', details: hocApproverId});
+                            var nextApproverField       = "custrecord_approver_"+nextLevelCount;
+                            var nextApprovalStatusField = "custrecord_approval_status_"+nextLevelCount;
+                            var nextApprovalSkipField   = "custrecord_approval_skip_"+nextLevelCount;
+                            var emalNxtLvl = nextLevelCount;
+                            nextLevelCount++;
+                            prRecordObj.setValue({fieldId: nextApproverField, value: hocApproverId});
+                            
+                            _nextApproversStatusSet(prRecordObj, allApprovers, allApproversStatus, sendEmailToArr, emailNxtLevelAtt, hocApproverId, nextApprovalStatusField, nextApprovalSkipField, emalNxtLvl, preparerId);
+                    
+                        }
+
                     //*********************************************** Step 3 : Director, VP, SVP, .... *******************************************************/
                             //requestorId
                             //prAmount
@@ -287,7 +324,7 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                             var buStartNo = 0;
                             var buEndNo   = 0;
 
-                            if(buApproverIds) {
+                            /*if(buApproverIds) {
                                 var buApproverIdsArr = buApproverIds.split(",");
                                 var buLevelesString     = nextLevelCount+",";
                                 buStartNo = nextLevelCount;
@@ -323,7 +360,7 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                                 }
                                 buLevelesString += nextLevelCount-1;
                                 buEndNo = nextLevelCount-1;
-                            }
+                            }*/
                             
                     //*********************************************** Step 5 : COO, CFO, CEO, .... *******************************************************/
                     
@@ -353,14 +390,14 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                                     nextLevelCount++;
                                     
                                     prRecordObj.setValue({fieldId: nextApproverField, value: nxtApproverId});
-                                    log.debug({title: 'C-Level Approver['+bua+']', details: nxtApproverId});
+                                    //log.debug({title: 'C-Level Approver['+bua+']', details: nxtApproverId});
                                     _nextApproversStatusSet(prRecordObj, allApprovers, allApproversStatus, sendEmailToArr, emailNxtLevelAtt, nxtApproverId, nextApprovalStatusField, nextApprovalSkipField, emalNxtLvl, preparerId);
                                 
                                 }
                             }
                             
                             nextLevelCount--;
-                            prRecordObj.setValue({fieldId: 'custrecord_bu_approvar_level_no', value: buLevelesString});
+                            //prRecordObj.setValue({fieldId: 'custrecord_bu_approvar_level_no', value: buLevelesString});
                             prRecordObj.setValue({fieldId: 'custrecord_no_of_level', value: nextLevelCount});
                             prRecordObj.setValue({fieldId: 'custrecord_purchase_req', value: vendorBillId});
 
@@ -388,17 +425,17 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                                 }
                             }//for(slv=1;slv<=nextLevelCount;slv++)
 
-                            if(Number(pendAprvlLvl) >= Number(buStartNo) && Number(pendAprvlLvl) <= Number(buEndNo)) {
+                            /*if(Number(pendAprvlLvl) >= Number(buStartNo) && Number(pendAprvlLvl) <= Number(buEndNo)) {
                                 custPRApprovalStatus = "Pending Approval from BU.";
                             }
-                            else {
+                            else {*/
                                 var pendAprvlEmpObj = search.lookupFields({type:search.Type.EMPLOYEE, id: stautsEmpId, columns: ['custentity1']});
                                 //log.debug({title: "pendAprvlEmpObj", details: JSON.stringify(pendAprvlEmpObj)});
                                 if(pendAprvlEmpObj.custentity1[0]) {
                                     var empDesignation = pendAprvlEmpObj.custentity1[0].text;
                                     custPRApprovalStatus = "Pending Approval from "+empDesignation;
                                 }
-                            }
+                            //}
 
                     var prId = prRecordObj.save();
                     log.debug({title: 'PR Approval Id', details: prId});
