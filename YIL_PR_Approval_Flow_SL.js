@@ -4,7 +4,7 @@
  * 
  */
 
-define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/encode"], function(record, http, search, render, email, url, encode) {
+define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/encode", "N/file"], function(record, http, search, render, email, url, encode, file) {
 
     var DelegationMatrix = {};        
     DelegationMatrix.ID                     = [];
@@ -78,6 +78,8 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                             log.debug({title: 'preparerId', details: preparerId});
                             log.debug({title: 'requestorId', details: requestorId});
                             log.debug({title: 'requestorApprover', details: requestorApprover});
+
+                            
 
                             if(requestorApprover == preparerId) {
 
@@ -589,6 +591,11 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
 
         }
 
+        var fileObjs = [];
+
+        fileObjs = _getPOAttachments(purchaseRequestId);
+
+        log.debug({ttile: 'fileObjs', details: fileObjs});
 
         var emailSubject = "PR #"+tranIdText + " has been submitted for your approval.";
         for(var s=0;s<sendEmailTo.length;s++) {
@@ -647,7 +654,8 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                 recipients: emailToId,
                 subject: emailSubject,
                 body: bodyString,
-                relatedRecords: {transactionId: Number(purchaseRequestId)}
+                relatedRecords: {transactionId: Number(purchaseRequestId)},
+                attachments: fileObjs
             });
         }
     }
@@ -801,6 +809,39 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
             }
         }
         return tempString;
+    }
+
+    function _getPOAttachments(poId) {
+        
+        var fileObjsTemp = [];
+
+        var purchaseorderSearchObj = search.create({
+            type: "purchaseorder",
+            filters:
+            [
+               ["type","anyof","PurchOrd"], 
+               "AND", 
+               ["internalidnumber","equalto",poId], 
+               "AND", 
+               ["mainline","is","T"], 
+               "AND", 
+               ["file.name","isnotempty",""]
+            ],
+            columns:
+            [
+               search.createColumn({name: "tranid", label: "Document Number"}),
+               search.createColumn({name: "internalid", join: "file", label: "Name"})
+            ]
+         });
+         var searchResultCount = purchaseorderSearchObj.runPaged().count;
+         log.debug("purchaseorderSearchObj result count",searchResultCount);
+         purchaseorderSearchObj.run().each(function(result){
+            //log.debug({title: 'File Object from search', details: result.getValue({name: 'name', join:'file'})});
+            fileObjsTemp.push(file.load({id: result.getValue({name: 'internalid', join:'file'})}));
+            return true;
+         });
+
+         return fileObjsTemp;
     }
 
     return {

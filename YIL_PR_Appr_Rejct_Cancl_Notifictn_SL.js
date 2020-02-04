@@ -4,7 +4,7 @@
  * 
  * 
  */
-define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/search", "N/runtime", "N/url", "N/encode"], function(http, record, ui, render, email, search, runtime, url, encode) {
+define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/search", "N/runtime", "N/url", "N/encode", "N/file"], function(http, record, ui, render, email, search, runtime, url, encode, file) {
 
     function onRequest(context) {
 
@@ -986,7 +986,10 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
             poTableString += _getItemAndExpenseTable(prObj) ;
 
         }
-        
+        var fileObjs = [];
+
+        fileObjs = _getPOAttachments(purchaseRequestId);
+
         var emailSubject = "PR #"+tranIdText + " has been submitted for your approval.";
         for(var s=0;s<sendEmailTo.length;s++) {
             var bodyString = "";
@@ -1044,7 +1047,8 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                 recipients: emailToId,
                 subject: emailSubject,
                 body: bodyString,
-                relatedRecords: {transactionId: Number(purchaseRequestId)}
+                relatedRecords: {transactionId: Number(purchaseRequestId)},
+                attachments: fileObjs
             });
         }
     }
@@ -1113,12 +1117,18 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
             bodyString += "     </body>";
             bodyString += " </html>";
 
+        var fileObjs = [];
+
+        fileObjs = _getPOAttachments(purchaseRequestId);
+
+
         var emailObj = email.send({
                 author: 60252,
                 recipients: [requestorId, preparerId],
                 subject: emailSubject,
                 body: bodyString,
-                relatedRecords: {transactionId: Number(purchaseRequestId)}
+                relatedRecords: {transactionId: Number(purchaseRequestId)},
+                attachments: fileObjs
             });
         
     }
@@ -1187,12 +1197,18 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
         bodyString += "     </body>";
         bodyString += " </html>";
 
+        var fileObjs = [];
+
+        fileObjs = _getPOAttachments(purchaseRequestId);
+
+
         var emailObj = email.send({
                 author: 60252,
                 recipients: [requestorId, preparerId],
                 subject: emailSubject,
                 body: bodyString,
-                relatedRecords: {transactionId: Number(purchaseRequestId)}
+                relatedRecords: {transactionId: Number(purchaseRequestId)},
+                attachments: fileObjs
             });
 
     }
@@ -1259,14 +1275,21 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
         bodyString += "         <br/><br/>Thank you<br/>Admin";
         bodyString += "     </body>";
         bodyString += " </html>";
+        var fileObjs = [];
+
+        fileObjs = _getPOAttachments(purchaseRequestId);
+
+        if(fileObj) {
+            fileObjs.push(fileObj);
+        }
 
         var emailObj = email.send({
                 author: 60252,
                 recipients: [requestorId, preparerId],
                 subject: emailSubject,
                 body: bodyString,
-                attachments: [fileObj],
-                relatedRecords: {transactionId: Number(purchaseRequestId)}
+                relatedRecords: {transactionId: Number(purchaseRequestId)},
+                attachments: fileObjs
             });
 
     }
@@ -1522,6 +1545,39 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
             }
         }
         return tempString;
+    }
+
+    function _getPOAttachments(poId) {
+        
+        var fileObjsTemp = [];
+
+        var purchaseorderSearchObj = search.create({
+            type: "purchaseorder",
+            filters:
+            [
+               ["type","anyof","PurchOrd"], 
+               "AND", 
+               ["internalidnumber","equalto",poId], 
+               "AND", 
+               ["mainline","is","T"], 
+               "AND", 
+               ["file.name","isnotempty",""]
+            ],
+            columns:
+            [
+               search.createColumn({name: "tranid", label: "Document Number"}),
+               search.createColumn({name: "internalid", join: "file", label: "Name"})
+            ]
+         });
+         var searchResultCount = purchaseorderSearchObj.runPaged().count;
+         log.debug("purchaseorderSearchObj result count",searchResultCount);
+         purchaseorderSearchObj.run().each(function(result){
+            //log.debug({title: 'File Object from search', details: result.getValue({name: 'name', join:'file'})});
+            fileObjsTemp.push(file.load({id: result.getValue({name: 'internalid', join:'file'})}));
+            return true;
+         });
+
+         return fileObjsTemp;
     }
 
     return {
