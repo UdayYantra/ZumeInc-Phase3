@@ -80,6 +80,14 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                             log.debug({title: 'requestorId', details: requestorId});
                             log.debug({title: 'requestorApprover', details: requestorApprover});
 
+                            var inactiveEmpObj = search.lookupFields({type: 'employee', id: requestorId, columns: ['isinactive', 'firstname']});
+
+                            if(inactiveEmpObj.isinactive) {
+                                log.debug({title: 'Inactive Employee Name', details: inactiveEmpObj.firstname});
+                                _sendEmailToBillCreatorForInactiveEmployee(preparerId, currentRecObj, inactiveEmpObj.firstname);
+                                return;
+                            }
+
                             if(requestorApprover == preparerId) {
 
                                 var nextApproverField       = "custrecord_approver_"+nextLevelCount;
@@ -136,6 +144,14 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                                 }
                             }
 
+                            var inactiveEmpObj = search.lookupFields({type: 'employee', id: fpaApproverId, columns: ['isinactive', 'firstname']});
+
+                            if(inactiveEmpObj.isinactive) {
+                                log.debug({title: 'Inactive Employee Name', details: inactiveEmpObj.firstname});
+                                _sendEmailToBillCreatorForInactiveEmployee(preparerId, currentRecObj, inactiveEmpObj.firstname);
+                                return;
+                            }
+
                             log.debug({title: 'fpaApproverId', details: fpaApproverId});
                             var nextApproverField       = "custrecord_approver_"+nextLevelCount;
                             var nextApprovalStatusField = "custrecord_approval_status_"+nextLevelCount;
@@ -165,6 +181,14 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                                     tmpLvls += nextLevelCount;
                                     DelegationMatrix.updateLevels[tempIndex] = tmpLvls;
                                 }
+                            }
+
+                            var inactiveEmpObj = search.lookupFields({type: 'employee', id: hocApproverId, columns: ['isinactive', 'firstname']});
+
+                            if(inactiveEmpObj.isinactive) {
+                                log.debug({title: 'Inactive Employee Name', details: inactiveEmpObj.firstname});
+                                _sendEmailToBillCreatorForInactiveEmployee(preparerId, currentRecObj, inactiveEmpObj.firstname);
+                                return;
                             }
 
                             log.debug({title: 'hocApproverId', details: hocApproverId});
@@ -311,6 +335,15 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                                     nextLevelCount++;
 
                                     var nxtApproverId = buApprovertempid;
+
+                                    var inactiveEmpObj = search.lookupFields({type: 'employee', id: nxtApproverId, columns: ['isinactive', 'firstname']});
+
+                                    if(inactiveEmpObj.isinactive) {
+                                        log.debug({title: 'Inactive Employee Name', details: inactiveEmpObj.firstname});
+                                        _sendEmailToBillCreatorForInactiveEmployee(preparerId, currentRecObj, inactiveEmpObj.firstname);
+                                        return;
+                                    }
+
                                     prRecordObj.setValue({fieldId: nextApproverField, value: nxtApproverId});
                                     
                                     _nextApproversStatusSet(prRecordObj, allApprovers, allApproversStatus, sendEmailToArr, emailNxtLevelAtt, nxtApproverId, nextApprovalStatusField, nextApprovalSkipField, emalNxtLvl, preparerId);
@@ -389,6 +422,14 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                                     }
                                     nextLevelCount++;
                                     
+                                    var inactiveEmpObj = search.lookupFields({type: 'employee', id: nxtApproverId, columns: ['isinactive', 'firstname']});
+
+                                    if(inactiveEmpObj.isinactive) {
+                                        log.debug({title: 'Inactive Employee Name', details: inactiveEmpObj.firstname});
+                                        _sendEmailToBillCreatorForInactiveEmployee(preparerId, currentRecObj, inactiveEmpObj.firstname);
+                                        return;
+                                    }
+
                                     prRecordObj.setValue({fieldId: nextApproverField, value: nxtApproverId});
                                     //log.debug({title: 'C-Level Approver['+bua+']', details: nxtApproverId});
                                     _nextApproversStatusSet(prRecordObj, allApprovers, allApproversStatus, sendEmailToArr, emailNxtLevelAtt, nxtApproverId, nextApprovalStatusField, nextApprovalSkipField, emalNxtLvl, preparerId);
@@ -855,6 +896,42 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
         }
 
         return returnableArr;
+    }
+
+    function _sendEmailToBillCreatorForInactiveEmployee(preparerId, currentRecObj, inactiveEmployeeName) {
+
+        var bodyString = "";
+        
+        tranIdText = currentRecObj.getValue({fieldId: 'transactionnumber'});
+
+        var emailSubject = "Bill# "+tranIdText+" approval process cancelled.";
+        
+        var emailToId = preparerId;
+        var userName = 'User';
+        var empObj = search.lookupFields({type: search.Type.EMPLOYEE, id: preparerId, columns: ["firstname"]});
+        if(empObj) {
+            userName = empObj.firstname;
+        }
+
+        bodyString += " <html>";
+        bodyString += "     <body>";
+        bodyString += "         Dear "+userName+",<br/><br/>System cancelled the apprvoval proacess for Bill# "+tranIdText+".<br/><br/>";
+        bodyString += "         You have employee record named \""+inactiveEmployeeName+"\" is inactivate which is a part of approval process.";
+        bodyString += "         <br/><br/>";
+        bodyString += "         Please do the needful.";
+        bodyString += "         <br/>";
+        bodyString += "         <br/><br/>Thank you<br/>Admin";
+        bodyString += "     </body>";
+        bodyString += " </html>";
+        
+        var emailObj = email.send({
+            author: 60252,
+            recipients: emailToId,
+            subject: emailSubject,
+            body: bodyString
+        });
+        
+
     }
 
     return {
