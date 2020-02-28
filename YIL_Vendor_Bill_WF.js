@@ -36,7 +36,7 @@ define(["N/url", "N/email", "N/encode", "N/search", "N/file"], function(url, ema
         var attachmentArr = [];
         var suiteletURL = url.resolveScript({scriptId: 'customscript_yil_pr_apr_rej_can_ntf_sl', deploymentId: 'customdeploy_yil_pr_apr_rej_can_ntf_sl', returnExternalUrl: true});
         
-        var billId = '', tranIdText = '', requestorName = '', customApproverId = '', billCreatorId = '', preparerName = '', vendorName  = '', totalAmount = '', departnmentName = '', className = '';
+        var billId = '', tranIdText = '', requestorName = '', customApproverId = '', billCreatorId = '', preparerName = '', vendorName  = '', totalAmount = '', departnmentName = '', className = '', memoText = '', internalComntTxt ='';
         
         if(currentRec) {
             billId = currentRec.id;
@@ -47,6 +47,8 @@ define(["N/url", "N/email", "N/encode", "N/search", "N/file"], function(url, ema
             billCreatorId = currentRec.getValue({fieldId: 'custbody_creator'});
             vendorName = currentRec.getText({fieldId: 'entity'});
             totalAmount = currentRec.getValue({fieldId: 'total'});
+            memoText = currentRec.getValue({fieldId: 'memo'});
+            internalComntTxt = currentRec.getValue({fieldId: 'custbody_internal_comments'});
             //departnmentName = currentRec.getText({fieldId: 'department'});
             //className = currentRec.getText({fieldId: 'class'});
             totalAmount = Number(totalAmount).toFixed(2);
@@ -73,7 +75,7 @@ define(["N/url", "N/email", "N/encode", "N/search", "N/file"], function(url, ema
 
             bodyString += " <html>";
             bodyString += "     <body>";
-            bodyString += "         Dear "+userName+",<br/><br/>You have received a new Bill for approval.";
+            bodyString += "         Hello  "+userName+",<br/><br/>You have received a new invoice for approval.";
             bodyString += "         <br/>";
             
             bodyString += "         <table>";
@@ -81,7 +83,7 @@ define(["N/url", "N/email", "N/encode", "N/search", "N/file"], function(url, ema
             bodyString += "         <tr><td>Approver</td><td>:</td><td>"+requestorName+"</td></tr>";
             bodyString += "         <tr><td>Creator</td><td>:</td><td>"+preparerName+"</td></tr>";
             bodyString += "         <tr><td>Vendor</td><td>:</td><td>"+vendorName+"</td></tr>";
-            bodyString += "         <tr><td>Total Amount</td><td>:</td><td>"+totalAmount+"</td></tr>";
+            bodyString += "         <tr><td>Total Amount</td><td>:</td><td>$"+totalAmount+"</td></tr>";
             //bodyString += "         <tr><td>Department</td><td>:</td><td>"+departnmentName+"</td></tr>";
             //bodyString += "         <tr><td>Class</td><td>:</td><td>"+className+"</td></tr>";
             bodyString += "         </table>";
@@ -89,15 +91,24 @@ define(["N/url", "N/email", "N/encode", "N/search", "N/file"], function(url, ema
             bodyString += poTableString;
             bodyString += "         <br/><br/>";
             //bodyString += "         Attached PDF is snapshot of PR.<br/>";
-            bodyString += "         Please use below buttons to either <i><b>Approve</b></i> or <i><b>Reject</b></i> Bill.";
+
+            bodyString += "         MEMO: "+memoText;
+            bodyString += "         <br/>";
+            bodyString += "         INTERNAL COMMENTS: "+internalComntTxt;
+            bodyString += "         <br/>";
+
+            bodyString += "         Please use buttons below to either <i><b>Approve</b></i> or <i><b>Reject</b></i> Bill.";
             bodyString += "         <br/><br/>";
-            bodyString += "         <b>Note:</b> Upon rejection system will ask for 'Reason for Rejection'.";
+            bodyString += "         <b>Note:</b> Upon rejection, the system will ask for you for a reason for the rejection.";
 
             bodyString += "         <br/><br/>";
+
+            bodyString += "         If you have any questions, please email ap@zume.com and reference the Invoice Number from above.";
+            bodyString += "         If you are not the right approver, please reject the invoice, and, if at all possible, enter the name of the correct approver in the “reason for the rejection”.";
 
             bodyString += "         <a href='"+approveURLParam+"'><img src='https://4879077-sb2.app.netsuite.com/core/media/media.nl?id=22152&c=4879077_SB2&h=9b1dfbb416b36a702a24&expurl=T' border='0' alt='Accept' style='width: 60px;'/></a>";
             bodyString += "         <a href='"+rejectURLParam+"'><img src='https://4879077-sb2.app.netsuite.com/core/media/media.nl?id=22151&c=4879077_SB2&h=65142f106e82b6703fdb&expurl=T' border='0' alt='Reject' style='width: 60px;'/></a>";
-            bodyString += "         <br/><br/>Thank you<br/>Admin";
+            bodyString += "         <br/><br/>Thank you<br/>Zume Purchasing Team";
             bodyString += "     </body>";
             bodyString += " </html>";
             
@@ -127,6 +138,7 @@ define(["N/url", "N/email", "N/encode", "N/search", "N/file"], function(url, ema
                             poTableString += "  <th><center><b>Item</b></center></th>";
                             poTableString += "  <th><center><b>Department</b></center></th>";
                             poTableString += "  <th><center><b>Class</b></center></th>";
+                            poTableString += "  <th><center><b>Description</b></center></th>";
                             poTableString += "  <th><center><b>Quantity</b></center></th>";
                             poTableString += "  <th><center><b>Rate</b></center></th>";
                             poTableString += "  <th><center><b>Amount</b></center></th>";
@@ -138,6 +150,7 @@ define(["N/url", "N/email", "N/encode", "N/search", "N/file"], function(url, ema
                             var itemName        = prObj.getSublistText({sublistId: 'item', fieldId: 'item', line: it});
                             var lnDepartmentNam = prObj.getSublistText({sublistId: 'item', fieldId: 'department', line: it});
                             var lnClassNm       = prObj.getSublistText({sublistId: 'item', fieldId: 'class', line: it});
+                            var lnDescptn       = prObj.getSublistText({sublistId: 'item', fieldId: 'description', line: it});
                             var itemQty         = prObj.getSublistValue({sublistId: 'item', fieldId: 'quantity', line: it});
                             var itemRate        = prObj.getSublistValue({sublistId: 'item', fieldId: 'rate', line: it});
                             var itemAmt         = prObj.getSublistValue({sublistId: 'item', fieldId: 'amount', line: it});
@@ -150,6 +163,7 @@ define(["N/url", "N/email", "N/encode", "N/search", "N/file"], function(url, ema
                                 poTableString += "  <td align=\"left\">"+itemName+"</td>";
                                 poTableString += "  <td align=\"lett\">"+lnDepartmentNam+"</td>";
                                 poTableString += "  <td align=\"left\">"+lnClassNm+"</td>";
+                                poTableString += "  <td align=\"left\">"+lnDescptn+"</td>";
                                 poTableString += "  <td align=\"center\">"+itemQty+"</td>";
                                 poTableString += "  <td align=\"right\">"+itemRate+"</td>";
                                 poTableString += "  <td align=\"right\">"+itemAmt+"</td>";

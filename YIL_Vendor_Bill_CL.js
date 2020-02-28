@@ -180,7 +180,7 @@ define(["N/search", "N/record", "N/url", "N/https", "N/runtime"], function(searc
                 var tolerancePerc = 0.0;
                 var toleranceAmt =0.0;
                 var baseTolerancePerc = 0.0;
-
+                var currentVBSubsidy = currentRecObj.getValue({fieldId: 'subsidiary'});
 
                 if(billCreatorId) {
                    // var empObj = search.lookupFields({type: 'employee', id: billCreatorId, columns: ['custentity_yil_alwd_toler_bill']});
@@ -190,7 +190,7 @@ define(["N/search", "N/record", "N/url", "N/https", "N/runtime"], function(searc
                     type: "customrecord_yil_bill_tolerance",
                     filters:
                     [
-                       ["custrecord_yil_tolerance_subsidiary","anyof","6"]
+                       ["custrecord_yil_tolerance_subsidiary","anyof",currentVBSubsidy]
                     ],
                     columns:
                     [
@@ -221,15 +221,16 @@ define(["N/search", "N/record", "N/url", "N/https", "N/runtime"], function(searc
                     var poObj = search.lookupFields({type: 'purchaseorder', id: poInternalId, columns: ['total']});
                     var poAmount = poObj.total;
                     if(poAmount) {
-                        poAmountWithTolerancePerc = Number(poAmount) + Number(poAmount*(tolerancePerc/100));
+                        //poAmountWithTolerancePerc = Number(poAmount) + Number(poAmount*(tolerancePerc/100));
+                        poAmountWithTolerancePerc = Number(poAmount*(tolerancePerc/100));
                         poAmountWithToleranceAmt = Number(toleranceAmt);
                         //alert('poAmountWithTolerancePerc = '+poAmountWithTolerancePerc);
                         //alert('poAmountWithToleranceAmt = '+poAmountWithToleranceAmt);
 
                         if(poAmountWithTolerancePerc < poAmountWithToleranceAmt)
-                            poAmountWithTolerance = poAmountWithTolerancePerc;
+                            poAmountWithTolerance = Number(poAmount) + Number(poAmountWithTolerancePerc);
                         else
-                            poAmountWithTolerance = poAmountWithToleranceAmt;                            
+                            poAmountWithTolerance = Number(poAmount) + Number(poAmountWithToleranceAmt);                            
                     }
                 }
                 //console.log('poAmount -> '+poAmount);
@@ -260,9 +261,9 @@ define(["N/search", "N/record", "N/url", "N/https", "N/runtime"], function(searc
                         LineExpense = result.getValue({name: 'expensecategory'});
                         //alert('LineExpense = '+LineExpense);
 
-                        if(_logValidation(LineItem))
+                        if(LineItem)
                             approvedBillItemTotal += Number(result.getValue({name: 'amount'}));
-                        if(_logValidation(LineExpense))
+                        if(LineExpense)
                             approvedBillExpenseTotal += Number(result.getValue({name: 'amount'}));    
                         //alert('approvedBillItemTotal = '+approvedBillItemTotal);
                         //alert('approvedBillExpenseTotal = '+approvedBillExpenseTotal);
@@ -340,7 +341,7 @@ define(["N/search", "N/record", "N/url", "N/https", "N/runtime"], function(searc
 
                 if(!errorEncountered) {
                     if(!requestorId) {
-                        errorMessage = "Please select the 'Requestor' field value in order to  submit for approval.";
+                        errorMessage = "Please select the 'Custom Approver' field value in order to  submit for approval.";
                         errorEncountered = true;
 
                     }
@@ -385,7 +386,7 @@ define(["N/search", "N/record", "N/url", "N/https", "N/runtime"], function(searc
                                 //log.debug({title: "FP&A Approver", details: result.getValue({name: 'custrecord_fp_a_approver'})});
                                 if(Number(billAmount) >= Number(fpaThresholdAmt)) {
                                     if(!fpaApproverId) {
-                                        fpaApproverId = result.getValue({name: 'custrecord_fp_a_approver'});
+                                       fpaApproverId = result.getValue({name: 'custrecord_fp_a_approver'});
                                     }
                                 }
                                 if(Number(billAmount) >= Number(hocThresholdAmt)) {
@@ -565,6 +566,9 @@ define(["N/search", "N/record", "N/url", "N/https", "N/runtime"], function(searc
                 
                 if(response.body == 'true') {
                     window.location.reload();
+                }
+                else {
+                    alert(response.body);
                 }
 
                 //alert('Submit For Approval in Process...');

@@ -939,7 +939,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                 subject: emailSubject,
                 body: bodyString,
                 attachments: attachmentArr,
-                relatedRecords: {transactionId: Number(vendorBillId)}
+                //relatedRecords: {transactionId: Number(vendorBillId)}
             });
         }
     }
@@ -1022,7 +1022,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                 subject: emailSubject,
                 body: bodyString,
                 attachments: attachmentArr,
-                relatedRecords: {transactionId: Number(vendorBillId)}
+                //relatedRecords: {transactionId: Number(vendorBillId)}
             });
         
     }
@@ -1048,6 +1048,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
             totalAmount = vbRecObj.getValue({fieldId: 'total'});
             departnmentName = vbRecObj.getText({fieldId: 'department'});
             className = vbRecObj.getText({fieldId: 'class'});
+            invDueDate = vbRecObj.getText({fieldId: 'duedate'});
             totalAmount = Number(totalAmount).toFixed(2);
             poTableString += _getItemAndExpenseTable(vbRecObj) ;
 
@@ -1070,20 +1071,21 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
             userName += "/"+empObj1.firstname;
         }
         
-        var emailSubject = "Bill #"+tranIdText + " has been approved.";
+        var emailSubject = "Invoice #"+tranIdText + " from "+vendorName+" has been approved.";
         bodyString += " <html>";
         bodyString += "     <body>";
         bodyString += "         Dear "+userName+",<br/><br/>Your Bill #"+tranIdText+" has been approved.";
         bodyString += "         <br/>";
         
         bodyString += "         <table>";
-        bodyString += "         <tr><td>Bill Number</td><td>:</td><td>"+tranIdText+"</td></tr>";
+        bodyString += "         <tr><td>Invoice Number</td><td>:</td><td>"+tranIdText+"</td></tr>";
         bodyString += "         <tr><td>Requester</td><td>:</td><td>"+requestorName+"</td></tr>";
         bodyString += "         <tr><td>Preparer</td><td>:</td><td>"+preparerName+"</td></tr>";
         bodyString += "         <tr><td>Vendor</td><td>:</td><td>"+vendorName+"</td></tr>";
-        bodyString += "         <tr><td>Total Amount</td><td>:</td><td>"+totalAmount+"</td></tr>";
+        bodyString += "         <tr><td>Total Amount</td><td>:</td><td>$"+totalAmount+"</td></tr>";
         bodyString += "         <tr><td>Department</td><td>:</td><td>"+departnmentName+"</td></tr>";
         bodyString += "         <tr><td>Class</td><td>:</td><td>"+className+"</td></tr>";
+        bodyString += "         <tr><td>Invoice Due Date:</td><td>:</td><td>"+invDueDate+"</td></tr>";
         bodyString += "         </table>";
         bodyString += "         <br/><br/>";
         bodyString += poTableString;
@@ -1094,8 +1096,13 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
             bodyString += "         <br/><br/>";
         }
 
+        bodyString += "     The invoice will be scheduled for payment at the due date.";
+        bodyString += "<br/>";
+        bodyString += "     For any other questions, please email ap@zume.com and reference the Invoice Number from above.";
+        bodyString += "<br/>";
+
         //bodyString += "         Attached PDF is snapshot of PR.";
-        bodyString += "         <br/><br/>Thank you<br/>Admin";
+        bodyString += "         <br/><br/>Thank you<br/>Zume Purchasing Team";
         bodyString += "     </body>";
         bodyString += " </html>";
 
@@ -1105,7 +1112,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                 subject: emailSubject,
                 body: bodyString,
                 attachments: attachmentArr,
-                relatedRecords: {transactionId: Number(vendorBillId)}
+                //relatedRecords: {transactionId: Number(vendorBillId)}
             });
 
     }
@@ -1155,7 +1162,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                 recipients: emailToId,
                 subject: emailSubject,
                 body: bodyString,
-                relatedRecords: {transactionId: Number(billId)}
+                //relatedRecords: {transactionId: Number(billId)}
             });
     }
 
@@ -1196,7 +1203,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
             recipients: emailToId,
             subject: emailSubject,
             body: bodyString,
-            relatedRecords: {transactionId: Number(billId)}
+            //relatedRecords: {transactionId: Number(billId)}
         });
     }
 
@@ -1214,6 +1221,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                             poTableString += "  <th><center><b>Item</b></center></th>";
                             poTableString += "  <th><center><b>Department</b></center></th>";
                             poTableString += "  <th><center><b>Class</b></center></th>";
+                            poTableString += "  <th><center><b>Description</b></center></th>";
                             poTableString += "  <th><center><b>Quantity</b></center></th>";
                             poTableString += "  <th><center><b>Rate</b></center></th>";
                             poTableString += "  <th><center><b>Amount</b></center></th>";
@@ -1225,6 +1233,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                             var itemName        = prObj.getSublistText({sublistId: 'item', fieldId: 'item', line: it});
                             var lnDepartmentNam = prObj.getSublistText({sublistId: 'item', fieldId: 'department', line: it});
                             var lnClassNm       = prObj.getSublistText({sublistId: 'item', fieldId: 'class', line: it});
+                            var lndescription   = prObj.getSublistText({sublistId: 'item', fieldId: 'description', line: it});
                             var itemQty         = prObj.getSublistValue({sublistId: 'item', fieldId: 'quantity', line: it});
                             var itemRate        = prObj.getSublistValue({sublistId: 'item', fieldId: 'rate', line: it});
                             var itemAmt         = prObj.getSublistValue({sublistId: 'item', fieldId: 'amount', line: it});
@@ -1237,9 +1246,10 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                                 poTableString += "  <td align=\"left\">"+itemName+"</td>";
                                 poTableString += "  <td align=\"lett\">"+lnDepartmentNam+"</td>";
                                 poTableString += "  <td align=\"left\">"+lnClassNm+"</td>";
+                                poTableString += "  <td align=\"left\">"+lndescription+"</td>";
                                 poTableString += "  <td align=\"center\">"+itemQty+"</td>";
-                                poTableString += "  <td align=\"right\">"+itemRate+"</td>";
-                                poTableString += "  <td align=\"right\">"+itemAmt+"</td>";
+                                poTableString += "  <td align=\"right\">$"+itemRate+"</td>";
+                                poTableString += "  <td align=\"right\">$"+itemAmt+"</td>";
                             poTableString += "</tr>";
 
                         }//for(var it=0;it<poItemLnCount;it++)
@@ -1247,7 +1257,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                         itemTotalAmount = Number(itemTotalAmount).toFixed(2);
 
                         poTableString += "<tr>";
-                            poTableString += "  <td align=\"right\" colspan=\"6\"><b>Total</b></td>";
+                            poTableString += "  <td align=\"right\" colspan=\"7\"><b>Total</b></td>";
                             poTableString += "  <td align=\"right\"><b>"+itemTotalAmount+"</b></td>";
                         poTableString += "</tr>";
                     poTableString += "</table>";

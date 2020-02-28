@@ -28,7 +28,7 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
             log.debug({title: 'purchaseReqId', details: purchaseReqId});
             log.debug({title: 'Fpa Approvers', details: fpaApproverId});
             //log.debug({title: 'BU Approvers', details: buApproverIds});
-
+            var returnInactivateErrorMesssage = "You cannot submit the Purchase Request because one or more approvers for this PR are inactive. Please contact the system administrator.";
             try {
                 
                 var prRecordObj     = record.create({type:'customrecord_pr_approval_flow', isDynamic:true});
@@ -79,6 +79,7 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                             if(inactiveEmpObj.isinactive) {
                                 log.debug({title: 'Inactive Employee Name', details: inactiveEmpObj.firstname});
                                 _sendEmailToPOCreatorForInactiveEmployee(preparerId, currentRecObj, inactiveEmpObj.firstname);
+                                context.response.write({output: returnInactivateErrorMesssage});
                                 return;
                             }
 
@@ -148,6 +149,7 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                             if(inactiveEmpObj.isinactive) {
                                 log.debug({title: 'Inactive Employee Name', details: inactiveEmpObj.firstname});
                                 _sendEmailToPOCreatorForInactiveEmployee(preparerId, currentRecObj, inactiveEmpObj.firstname);
+                                context.response.write({output: returnInactivateErrorMesssage});
                                 return;
                             }
 
@@ -188,6 +190,7 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                             if(inactiveEmpObj.isinactive) {
                                 log.debug({title: 'Inactive Employee Name', details: inactiveEmpObj.firstname});
                                 _sendEmailToPOCreatorForInactiveEmployee(preparerId, currentRecObj, inactiveEmpObj.firstname);
+                                context.response.write({output: returnInactivateErrorMesssage});
                                 return;
                             }
 
@@ -343,6 +346,7 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                                     if(inactiveEmpObj.isinactive) {
                                         log.debug({title: 'Inactive Employee Name', details: inactiveEmpObj.firstname});
                                         _sendEmailToPOCreatorForInactiveEmployee(preparerId, currentRecObj, inactiveEmpObj.firstname);
+                                        context.response.write({output: returnInactivateErrorMesssage});
                                         return;
                                     }
 
@@ -431,6 +435,7 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                                     if(inactiveEmpObj.isinactive) {
                                         log.debug({title: 'Inactive Employee Name', details: inactiveEmpObj.firstname});
                                         _sendEmailToPOCreatorForInactiveEmployee(preparerId, currentRecObj, inactiveEmpObj.firstname);
+                                        context.response.write({output: returnInactivateErrorMesssage});
                                         return;
                                     }
 
@@ -527,7 +532,7 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
         var suiteletURL = url.resolveScript({scriptId: 'customscript_yil_pr_apr_rej_can_ntf_sl', deploymentId: 'customdeploy_yil_pr_apr_rej_can_ntf_sl', returnExternalUrl: true});
         
         var prObj = record.load({type: 'purchaseorder', id: purchaseRequestId});
-        var tranIdText = '', requestorName = '', preparerName = '', vendorName  = '', totalAmount = '', departnmentName = '', className = '';
+        var tranIdText = '', requestorName = '', preparerName = '', vendorName  = '', totalAmount = '', departnmentName = '', className = '', ordrNoteFldVal = '', internalCommentsVal = '';
         if(prObj) {
             tranIdText = prObj.getValue({fieldId: 'tranid'});
             requestorName = prObj.getText({fieldId: 'custbody_requestor'});
@@ -536,6 +541,8 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
             totalAmount = prObj.getValue({fieldId: 'total'});
             departnmentName = prObj.getText({fieldId: 'department'});
             className = prObj.getText({fieldId: 'class'});
+            ordrNoteFldVal = prObj.getText({fieldId: 'custbody2'});
+            internalCommentsVal = prObj.getText({fieldId: 'custbody_internal_comments'});
             totalAmount = Number(totalAmount).toFixed(2);
             var itemTotalAmount = 0.00;
             var expenseTotalAmount = 0.00;
@@ -551,6 +558,7 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                             poTableString += "  <th><center><b>Item</b></center></th>";
                             poTableString += "  <th><center><b>Department</b></center></th>";
                             poTableString += "  <th><center><b>Class</b></center></th>";
+                            poTableString += "  <th><center><b>Description</b></center></th>";
                             poTableString += "  <th><center><b>Quantity</b></center></th>";
                             poTableString += "  <th><center><b>Rate</b></center></th>";
                             poTableString += "  <th><center><b>Amount</b></center></th>";
@@ -562,6 +570,7 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                             var itemName        = prObj.getSublistText({sublistId: 'item', fieldId: 'item', line: it});
                             var lnDepartmentNam = prObj.getSublistText({sublistId: 'item', fieldId: 'department', line: it});
                             var lnClassNm       = prObj.getSublistText({sublistId: 'item', fieldId: 'class', line: it});
+                            var lnDescptn       = prObj.getSublistValue({sublistId: 'item', fieldId: 'description', line: it});
                             var itemQty         = prObj.getSublistValue({sublistId: 'item', fieldId: 'quantity', line: it});
                             var itemRate        = prObj.getSublistValue({sublistId: 'item', fieldId: 'rate', line: it});
                             var itemAmt         = prObj.getSublistValue({sublistId: 'item', fieldId: 'amount', line: it});
@@ -574,9 +583,10 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                                 poTableString += "  <td align=\"left\">"+itemName+"</td>";
                                 poTableString += "  <td align=\"lett\">"+lnDepartmentNam+"</td>";
                                 poTableString += "  <td align=\"left\">"+lnClassNm+"</td>";
+                                poTableString += "  <td align=\"left\">"+lnDescptn+"</td>";
                                 poTableString += "  <td align=\"center\">"+itemQty+"</td>";
-                                poTableString += "  <td align=\"right\">"+itemRate+"</td>";
-                                poTableString += "  <td align=\"right\">"+itemAmt+"</td>";
+                                poTableString += "  <td align=\"right\">$"+itemRate+"</td>";
+                                poTableString += "  <td align=\"right\">$"+itemAmt+"</td>";
                             poTableString += "</tr>";
 
                         }//for(var it=0;it<poItemLnCount;it++)
@@ -584,8 +594,8 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                         itemTotalAmount = Number(itemTotalAmount).toFixed(2);
 
                         poTableString += "<tr>";
-                            poTableString += "  <td align=\"right\" colspan=\"6\"><b>Total</b></td>";
-                            poTableString += "  <td align=\"right\"><b>"+itemTotalAmount+"</b></td>";
+                            poTableString += "  <td align=\"right\" colspan=\"7\"><b>Total</b></td>";
+                            poTableString += "  <td align=\"right\"><b>$"+itemTotalAmount+"</b></td>";
                         poTableString += "</tr>";
                     poTableString += "</table>";
                 }//if(Number(poItemLnCount) > 0)
@@ -643,15 +653,17 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
 
         log.debug({ttile: 'fileObjs', details: fileObjs});
 
-        var emailSubject = "PR #"+tranIdText + " has been submitted for your approval.";
+        var emailSubject = "Purchase Request for Purchase Order No. "+tranIdText + " has been submitted for your approval.";
         for(var s=0;s<sendEmailTo.length;s++) {
             var emailToId = sendEmailTo[s];
             var nextLevel = emailNxtLevelAtt[s];
             var userName = 'User';
-            var empObj = search.lookupFields({type: search.Type.EMPLOYEE, id: emailToId, columns: ["firstname"]});
+            var empObj = search.lookupFields({type: search.Type.EMPLOYEE, id: emailToId, columns: ["firstname", "lastname"]});
             if(empObj) {
                 log.debug({title: "empObj", details: JSON.stringify(empObj)});
-                userName = empObj.firstname;
+                var firstName = empObj.firstname;
+                var lastName = empObj.lastname;
+                userName = firstName + " " + lastName;
             }
 
             //var param = {processFlag: 'a', prAfId: prAfId, recId: recId, nextLevel: nextLevel, fromrec: "1"};
@@ -661,15 +673,15 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
 
             bodyString += " <html>";
             bodyString += "     <body>";
-            bodyString += "         Dear "+userName+",<br/><br/>You have received a new PR for approval.";
+            bodyString += "         Hello "+userName+",<br/><br/>You have received a new Purchase Request for approval.";
             bodyString += "         <br/><br/>";
             
             bodyString += "         <table>";
-            bodyString += "         <tr><td>PR Number</td><td>:</td><td>"+tranIdText+"</td></tr>";
-            bodyString += "         <tr><td>Requester</td><td>:</td><td>"+requestorName+"</td></tr>";
+            bodyString += "         <tr><td>Purchase Request for</td><td>:</td><td>Purchase Order Number "+tranIdText+"</td></tr>";
+            bodyString += "         <tr><td>Requestor</td><td>:</td><td>"+requestorName+"</td></tr>";
             bodyString += "         <tr><td>Preparer</td><td>:</td><td>"+preparerName+"</td></tr>";
             bodyString += "         <tr><td>Vendor</td><td>:</td><td>"+vendorName+"</td></tr>";
-            bodyString += "         <tr><td>Total Amount</td><td>:</td><td>"+totalAmount+"</td></tr>";
+            bodyString += "         <tr><td>Total Amount</td><td>:</td><td>$"+totalAmount+"</td></tr>";
             bodyString += "         <tr><td>Department</td><td>:</td><td>"+departnmentName+"</td></tr>";
             bodyString += "         <tr><td>Class</td><td>:</td><td>"+className+"</td></tr>";
             bodyString += "         </table>";
@@ -682,16 +694,24 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                 bodyString += "         <br/><br/>";
             }
 
-            //bodyString += "         Attached PDF is snapshot of PR.<br/>";
-            bodyString += "         Please use below buttons to either <i><b>Approve</b></i> or <i><b>Reject</b></i> PR.";
+            
+            
+            bodyString += "         ORDER NOTES FIELD(TO BE PRINTED): "+ordrNoteFldVal;
+            bodyString += "         <br/>";
+            bodyString += "         INTERNAL COMMENTS: "+internalCommentsVal;
             bodyString += "         <br/><br/>";
-            bodyString += "         <b>Note:</b> Upon rejection system will ask for 'Reason for Rejection'.";
+
+            //bodyString += "         Attached PDF is snapshot of PR.<br/>";
+            bodyString += "         Please use buttons below to either <i><b>Approve</b></i> or <i><b>Reject</b></i> the Purchase Request.";
+            bodyString += "         <br/><br/>";
+            bodyString += "         <b>Note:</b> Upon rejection the system will ask for you for a reason for the rejection.";
 
             bodyString += "         <br/><br/>";
 
             bodyString += "         <a href='"+approveURLParam+"'><img src='https://4879077-sb2.app.netsuite.com/core/media/media.nl?id=22152&c=4879077_SB2&h=9b1dfbb416b36a702a24&expurl=T' border='0' alt='Accept' style='width: 60px;'/></a>";
             bodyString += "         <a href='"+rejectURLParam+"'><img src='https://4879077-sb2.app.netsuite.com/core/media/media.nl?id=22151&c=4879077_SB2&h=65142f106e82b6703fdb&expurl=T' border='0' alt='Reject' style='width: 60px;'/></a>";
-            bodyString += "         <br/><br/>Thank you<br/>Admin";
+            bodyString += "         <br/>If you have any questions, please email ap@zume.com and reference the Purchase Order Number from above.";
+            bodyString += "         <br/><br/>Thank you<br/>Zume Purchasing Team";
             bodyString += "     </body>";
             bodyString += " </html>";
             
@@ -700,7 +720,7 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                 recipients: emailToId,
                 subject: emailSubject,
                 body: bodyString,
-                relatedRecords: {transactionId: Number(purchaseRequestId)},
+                //relatedRecords: {transactionId: Number(purchaseRequestId)},
                 attachments: fileObjs
             });
         }
@@ -907,12 +927,11 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
 
         bodyString += " <html>";
         bodyString += "     <body>";
-        bodyString += "         Dear "+userName+",<br/><br/>System cancelled the apprvoval proacess for PR# "+tranIdText+".<br/><br/>";
-        bodyString += "         You have employee record named \""+inactiveEmployeeName+"\" is inactivate which is a part of approval process.";
+        bodyString += "         Dear "+userName+",<br/><br/>Unfortunately we had to cancel the approval process for Purchase Order "+tranIdText+".<br/><br/>";
+        bodyString += "         In the approval chain there is an employee record named "+inactiveEmployeeName+". The record for this employee is inactive in NetSuite.  With this we cannot submit the Purchase Request. Please reach out to ap@zume.com to discuss potential next steps  and reference the Purchase Order Number from above.";
         bodyString += "         <br/><br/>";
         bodyString += "         Please do the needful.";
-        bodyString += "         <br/>";
-        bodyString += "         <br/><br/>Thank you<br/>Admin";
+        bodyString += "         <br/><br/>Thank you<br/>Zume Purchasing Team";
         bodyString += "     </body>";
         bodyString += " </html>";
         

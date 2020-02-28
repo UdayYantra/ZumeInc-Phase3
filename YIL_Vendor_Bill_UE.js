@@ -51,7 +51,7 @@
 
                     var stdCancelButton = form.getButton("cancelbill");
                     if(stdCancelButton) {
-                        stdCancelButton.isHidden = true;
+                        //stdCancelButton.isHidden = true;
                     }
                 }
 

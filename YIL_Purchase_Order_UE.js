@@ -59,33 +59,33 @@ define(['N/runtime', 'N/record', 'N/search', 'N/redirect', 'N/ui/serverWidget'],
 
                 }
             }
-            else if(status == 2 && stdStatus != "H" && stdStatus != "G") {  //2 : Approved
-                if(prApprovalFlowRec) {
-                    //Cancel Button
-                    var prSearchObj = search.create({type: 'purchaseorder', id: recId, filters:[['internalid',search.Operator.ANYOF, recId], "AND", ['mainline', search.Operator.IS, false], "AND", [['appliedtotransaction', search.Operator.NONEOF, '@NONE@'],"OR",['applyingtransaction', search.Operator.NONEOF, '@NONE@']]], columns:[search.createColumn({name: 'internalid'})]});
-                    log.debug({title: "Search Count", details: prSearchObj.runPaged().count});
-                    if(prSearchObj.runPaged().count == 0) {
-                        var stdCloseButton = form.getButton("closeremaining");
-                        if(stdCloseButton) {
-                            stdCloseButton.isHidden = true;
-                        }
-                        //PO Cancel: Applicable only to creator and roles like 'AP Manager, FP&A Approval, Administrator'
-                        var rolesArr = [];
-                        var rolesFromParameter = scriptObj.getParameter({name: 'custscript_po_cancel_btn_role_access'});
-                        //log.debug({title: 'rolesFromParameter', details: rolesFromParameter});
-                        if(rolesFromParameter) {
-                            rolesArr = rolesFromParameter.split(",");
-                        }
-                        /*log.debug({title: 'rolesArr', details: rolesArr});
-                        log.debug({title: 'currentUserRole', details: currentUserRole});
-                        log.debug({title: 'rolesArr.indexOf(currentUserRole)', details: rolesArr.indexOf(currentUserRole.toString())});*/
-                        if(Number(preparerId) == Number(currentUserId) || (Number(rolesArr.indexOf(currentUserRole.toString())) >= 0)) {
-                            var cancelBtn = form.addButton({id: 'custpage_cancel_btn', label: 'Cancel PO', functionName: "cancelRequest("+recId+","+prApprovalFlowRec+");"});
-                        }
-                        
+            
+            if(prApprovalFlowRec && stdStatus != "H") {
+                //Cancel Button
+                var prSearchObj = search.create({type: 'purchaseorder', id: recId, filters:[['internalid',search.Operator.ANYOF, recId], "AND", ['mainline', search.Operator.IS, false], "AND", [['appliedtotransaction', search.Operator.NONEOF, '@NONE@'],"OR",['applyingtransaction', search.Operator.NONEOF, '@NONE@']]], columns:[search.createColumn({name: 'internalid'})]});
+                log.debug({title: "Search Count", details: prSearchObj.runPaged().count});
+                if(prSearchObj.runPaged().count == 0) {
+                    var stdCloseButton = form.getButton("closeremaining");
+                    if(stdCloseButton) {
+                        stdCloseButton.isHidden = true;
                     }
+                    //PO Cancel: Applicable only to creator and roles like 'AP Manager, FP&A Approval, Administrator'
+                    var rolesArr = [];
+                    var rolesFromParameter = scriptObj.getParameter({name: 'custscript_po_cancel_btn_role_access'});
+                    //log.debug({title: 'rolesFromParameter', details: rolesFromParameter});
+                    if(rolesFromParameter) {
+                        rolesArr = rolesFromParameter.split(",");
+                    }
+                    /*log.debug({title: 'rolesArr', details: rolesArr});
+                    log.debug({title: 'currentUserRole', details: currentUserRole});
+                    log.debug({title: 'rolesArr.indexOf(currentUserRole)', details: rolesArr.indexOf(currentUserRole.toString())});*/
+                    if(Number(preparerId) == Number(currentUserId) || (Number(rolesArr.indexOf(currentUserRole.toString())) >= 0)) {
+                        var cancelBtn = form.addButton({id: 'custpage_cancel_btn', label: 'Cancel PO', functionName: "cancelRequest("+recId+","+prApprovalFlowRec+");"});
+                    }
+                    
                 }
             }
+            
             
             if(prApprovalFlowRec && _getPOApplyingTransaction(recId)) {
                 var editButton = form.getButton("edit");
@@ -156,13 +156,18 @@ define(['N/runtime', 'N/record', 'N/search', 'N/redirect', 'N/ui/serverWidget'],
     function beforeSubmit(context) {
 
         log.debug({title: 'context.type in Before Submit', details: context.type});
+        var recObj = context.newRecord;
         if(context.type == context.UserEventType.CREATE) {
-
-            var recObj = context.newRecord;
 
             recObj.setValue({fieldId: 'custbody_pr_approval_status', value: 'Pending Submission'});
 
         }
+
+        if(!recObj.getValue({fieldId: 'custbody_requestor'}) && recObj.getValue({fieldId: 'custbody_zume_requested_by'}))  {
+            recObj.setValue({fieldId: 'custbody_requestor', value: recObj.getValue({fieldId: 'custbody_zume_requested_by'})});
+        }
+
+
 
     }
     function afterSubmit(context) {
@@ -202,7 +207,11 @@ define(['N/runtime', 'N/record', 'N/search', 'N/redirect', 'N/ui/serverWidget'],
                         //Update the current PR with 'PR Approval Flow' to empty.
                         var poRecObj = record.load({type: 'purchaseorder', id: newRecordObj.id});
                         if(poRecObj) {
+                            poRecObj.setValue({fieldId: 'custbody_pr_approval_status', value: ''});
+                            poRecObj.setValue({fieldId: 'custbody_rejection_justifctn', value: ''});
+                            poRecObj.setValue({fieldId: 'custbody_cancellation_reason', value: ''});
                             poRecObj.setValue({fieldId: 'custbody_pr_approval_flow', value: ''});
+                            poRecObj.setValue({fieldId: 'approvalstatus', value: '1'});
                             poRecObj.save();
                         }
 

@@ -973,7 +973,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
         var suiteletURL = url.resolveScript({scriptId: currentScriptId, deploymentId: currentScriptDeploumentId, returnExternalUrl: true});
         
         var prObj = record.load({type: 'purchaseorder', id: purchaseRequestId});
-        var tranIdText = '', requestorName = '', preparerName = '', vendorName  = '', totalAmount = '', departnmentName = '', className = '';
+        var tranIdText = '', requestorName = '', preparerName = '', vendorName  = '', totalAmount = '', departnmentName = '', className = '', ordrNoteFldVal = '', internalCommentsVal = '';
         if(prObj) {
             tranIdText = prObj.getValue({fieldId: 'tranid'});
             requestorName = prObj.getText({fieldId: 'custbody_requestor'});
@@ -982,6 +982,8 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
             totalAmount = prObj.getValue({fieldId: 'total'});
             departnmentName = prObj.getText({fieldId: 'department'});
             className = prObj.getText({fieldId: 'class'});
+            ordrNoteFldVal = prObj.getText({fieldId: 'custbody2'});
+            internalCommentsVal = prObj.getText({fieldId: 'custbody_internal_comments'});
             totalAmount = Number(totalAmount).toFixed(2);
             poTableString += _getItemAndExpenseTable(prObj) ;
 
@@ -990,16 +992,18 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
 
         fileObjs = _getPOAttachments(purchaseRequestId);
 
-        var emailSubject = "PR #"+tranIdText + " has been submitted for your approval.";
+        var emailSubject = "Purchase Request for Purchase Order No. "+tranIdText + " has been submitted for your approval.";
         for(var s=0;s<sendEmailTo.length;s++) {
             var bodyString = "";
             var emailToId = sendEmailTo[s];
             var nextLevel = emailNxtLevelAtt[s];
             var userName = 'User';
-            var empObj = search.lookupFields({type: search.Type.EMPLOYEE, id: emailToId, columns: ["firstname"]});
+            var empObj = search.lookupFields({type: search.Type.EMPLOYEE, id: emailToId, columns: ["firstname", "lastname"]});
             if(empObj) {
                 log.debug({title: "empObj", details: JSON.stringify(empObj)});
-                userName = empObj.firstname;
+                var firstName = empObj.firstname;
+                var lastName = empObj.lastname;
+                userName = firstName + " " + lastName;
             }
 
             //var param = {processFlag: 'a', prAfId: prAfId, recId: recId, nextLevel: nextLevel, fromrec: "1"};
@@ -1009,15 +1013,15 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
 
             bodyString += " <html>";
             bodyString += "     <body>";
-            bodyString += "         Dear "+userName+",<br/><br/>You have received a new PR for approval.";
+            bodyString += "         Hello "+userName+",<br/><br/>You have received a new Purchase Request for approval.";
             bodyString += "         <br/>";
             
             bodyString += "         <table>";
-            bodyString += "         <tr><td>PR Number</td><td>:</td><td>"+tranIdText+"</td></tr>";
-            bodyString += "         <tr><td>Requester</td><td>:</td><td>"+requestorName+"</td></tr>";
+            bodyString += "         <tr><td>Purchase Request for</td><td>:</td><td>Purchase Order Number "+tranIdText+"</td></tr>";
+            bodyString += "         <tr><td>Requestor</td><td>:</td><td>"+requestorName+"</td></tr>";
             bodyString += "         <tr><td>Preparer</td><td>:</td><td>"+preparerName+"</td></tr>";
             bodyString += "         <tr><td>Vendor</td><td>:</td><td>"+vendorName+"</td></tr>";
-            bodyString += "         <tr><td>Total Amount</td><td>:</td><td>"+totalAmount+"</td></tr>";
+            bodyString += "         <tr><td>Total Amount</td><td>:</td><td>$"+totalAmount+"</td></tr>";
             bodyString += "         <tr><td>Department</td><td>:</td><td>"+departnmentName+"</td></tr>";
             bodyString += "         <tr><td>Class</td><td>:</td><td>"+className+"</td></tr>";
             bodyString += "         </table>";
@@ -1029,16 +1033,23 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                 bodyString += prevApproverTableString;
                 bodyString += "         <br/><br/>";
             }
+            
+            
+            bodyString += "         ORDER NOTES FIELD(TO BE PRINTED): "+ordrNoteFldVal;
+            bodyString += "         <br/>";
+            bodyString += "         INTERNAL COMMENTS: "+internalCommentsVal;
+            bodyString += "         <br/><br/>";
 
             //bodyString += "         Attached PDF is snapshot of PR.<br/>";
-            bodyString += "         Please use below buttons to either <i><b>Approve</b></i> or <i><b>Reject</b></i> PR.";
+            bodyString += "         Please use buttons below to either <i><b>Approve</b></i> or <i><b>Reject</b></i> the Purchase Request.";
             bodyString += "         <br/><br/>";
-            bodyString += "         <b>Note:</b> Upon rejection system will ask for 'Reason for Rejection'.";
+            bodyString += "         <b>Note:</b> Upon rejection the system will ask for you for a reason for the rejection.";
 
             bodyString += "         <br/><br/>";
             bodyString += "         <a href='"+approveURLParam+"'><img src='https://4879077-sb2.app.netsuite.com/core/media/media.nl?id=22152&c=4879077_SB2&h=9b1dfbb416b36a702a24&expurl=T' border='0' alt='Accept' style='width: 60px;'/></a>";
             bodyString += "         <a href='"+rejectURLParam+"'><img src='https://4879077-sb2.app.netsuite.com/core/media/media.nl?id=22151&c=4879077_SB2&h=65142f106e82b6703fdb&expurl=T' border='0' alt='Reject' style='width: 60px;'/></a>";
-            bodyString += "         <br/><br/>Thank you<br/>Admin";
+            bodyString += "         <br/>If you have any questions, please email ap@zume.com and reference the Purchase Order Number from above.";
+            bodyString += "         <br/><br/>Thank you<br/>Zume Purchasing Team";
             bodyString += "     </body>";
             bodyString += " </html>";
             
@@ -1047,7 +1058,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                 recipients: emailToId,
                 subject: emailSubject,
                 body: bodyString,
-                relatedRecords: {transactionId: Number(purchaseRequestId)},
+                //relatedRecords: {transactionId: Number(purchaseRequestId)},
                 attachments: fileObjs
             });
         }
@@ -1060,16 +1071,20 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
         var poTableString = "";
         var userName    = "User";
         
-        var empObj = search.lookupFields({type: search.Type.EMPLOYEE, id: requestorId, columns: ["firstname"]});
+        var empObj = search.lookupFields({type: search.Type.EMPLOYEE, id: requestorId, columns: ["firstname", "lastname"]});
         if(empObj) {
             log.debug({title: "empObj", details: JSON.stringify(empObj)});
-            userName = empObj.firstname;
+            var firstName = empObj.firstname;
+            var lastName = empObj.lastname;
+            userName = firstName + " " + lastName;
         }
 
-        var empObj1 = search.lookupFields({type: search.Type.EMPLOYEE, id: preparerId, columns: ["firstname"]});
+        var empObj1 = search.lookupFields({type: search.Type.EMPLOYEE, id: preparerId, columns: ["firstname", "lastname"]});
         if(empObj1) {
             log.debug({title: "empObj", details: JSON.stringify(empObj1)});
-            userName += "/"+empObj1.firstname;
+            var firstName = empObj.firstname;
+            var lastName = empObj.lastname;
+            userName = "/" + firstName + " " + lastName;
         }
 
         var prObj = record.load({type: 'purchaseorder', id: purchaseRequestId});
@@ -1086,20 +1101,20 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
             poTableString += _getItemAndExpenseTable(prObj) ;
         }
         
-        var emailSubject = "PR #"+tranIdText + " has been Rejected.";
+        var emailSubject = "Purchase Request for Purchase Order "+tranIdText + " has been Rejected.";
 
         bodyString += " <html>";
             bodyString += "     <body>";
-            bodyString += "         Dear "+userName+",<br/><br/>Your PR #"+tranIdText+" has been Rejected.";
+            bodyString += "         Hello "+userName+",<br/><br/>Your Purcahse Request for Purchase Order "+tranIdText+" has been rejected.";
             bodyString += "         <br/>";
             
             bodyString += "         <table>";
             bodyString += "         <tr><td>PR Number</td><td>:</td><td>"+tranIdText+"</td></tr>";
-            bodyString += "         <tr><td>Reason</td><td>:</td><td>"+reasonText+"</td></tr>";
-            bodyString += "         <tr><td>Requester</td><td>:</td><td>"+requestorName+"</td></tr>";
+            bodyString += "         <tr><td><b>Reason</b></td><td>:</td><td><b>"+reasonText+"</b></td></tr>";
+            bodyString += "         <tr><td>Requestor</td><td>:</td><td>"+requestorName+"</td></tr>";
             bodyString += "         <tr><td>Preparer</td><td>:</td><td>"+preparerName+"</td></tr>";
             bodyString += "         <tr><td>Vendor</td><td>:</td><td>"+vendorName+"</td></tr>";
-            bodyString += "         <tr><td>Total Amount</td><td>:</td><td>"+totalAmount+"</td></tr>";
+            bodyString += "         <tr><td>Total Amount</td><td>:</td><td>$"+totalAmount+"</td></tr>";
             bodyString += "         <tr><td>Department</td><td>:</td><td>"+departnmentName+"</td></tr>";
             bodyString += "         <tr><td>Class</td><td>:</td><td>"+className+"</td></tr>";
             bodyString += "         </table>";
@@ -1112,8 +1127,11 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                 bodyString += "         <br/><br/>";
             }
 
+            bodyString += "Please see the reason for the rejection above. If you have any questions about the rejection, please connect directly with the person who rejected the Purchase Request.";
+            bodyString += "For any other questions, please email ap@zume.com and reference the Purchase Order Number from above.";
+            
             //bodyString += "         Attached PDF is snapshot of PR.";
-            bodyString += "         <br/><br/>Thank you<br/>Admin";
+            bodyString += "         <br/><br/>Thank you<br/>Zume Purchasing Team";
             bodyString += "     </body>";
             bodyString += " </html>";
 
@@ -1127,7 +1145,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                 recipients: [requestorId, preparerId],
                 subject: emailSubject,
                 body: bodyString,
-                relatedRecords: {transactionId: Number(purchaseRequestId)},
+                //relatedRecords: {transactionId: Number(purchaseRequestId)},
                 attachments: fileObjs
             });
         
@@ -1207,7 +1225,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                 recipients: [requestorId, preparerId],
                 subject: emailSubject,
                 body: bodyString,
-                relatedRecords: {transactionId: Number(purchaseRequestId)},
+                //relatedRecords: {transactionId: Number(purchaseRequestId)},
                 attachments: fileObjs
             });
 
@@ -1235,30 +1253,34 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
             poTableString += _getItemAndExpenseTable(poRecObj) ;
         }
         
-        var empObj = search.lookupFields({type: search.Type.EMPLOYEE, id: requestorId, columns: ["firstname"]});
+        var empObj = search.lookupFields({type: search.Type.EMPLOYEE, id: requestorId, columns: ["firstname", "lastname"]});
         if(empObj) {
             log.debug({title: "empObj", details: JSON.stringify(empObj)});
-            userName = empObj.firstname;
+            var firstName = empObj.firstname;
+            var lastName = empObj.lastname;
+            userName = firstName + " " + lastName;
         }
 
-        var empObj1 = search.lookupFields({type: search.Type.EMPLOYEE, id: preparerId, columns: ["firstname"]});
+        var empObj1 = search.lookupFields({type: search.Type.EMPLOYEE, id: preparerId, columns: ["firstname", "lastname"]});
         if(empObj1) {
             log.debug({title: "empObj", details: JSON.stringify(empObj1)});
-            userName += "/"+empObj1.firstname;
+            var firstName = empObj.firstname;
+            var lastName = empObj.lastname;
+            userName = "/"+firstName + " " + lastName;
         }
         
-        var emailSubject = "PR #"+tranIdText + " has been approved.";
+        var emailSubject = "Purchase Order #"+tranIdText + " has been approved.";
         bodyString += " <html>";
         bodyString += "     <body>";
         bodyString += "         Dear "+userName+",<br/><br/>Your PR #"+tranIdText+" has been approved.";
         bodyString += "         <br/>";
         
         bodyString += "         <table>";
-        bodyString += "         <tr><td>PR Number</td><td>:</td><td>"+tranIdText+"</td></tr>";
-        bodyString += "         <tr><td>Requester</td><td>:</td><td>"+requestorName+"</td></tr>";
+        bodyString += "         <tr><td>Purchase Order Number</td><td>:</td><td>"+tranIdText+"</td></tr>";
+        bodyString += "         <tr><td>Requestor</td><td>:</td><td>"+requestorName+"</td></tr>";
         bodyString += "         <tr><td>Preparer</td><td>:</td><td>"+preparerName+"</td></tr>";
         bodyString += "         <tr><td>Vendor</td><td>:</td><td>"+vendorName+"</td></tr>";
-        bodyString += "         <tr><td>Total Amount</td><td>:</td><td>"+totalAmount+"</td></tr>";
+        bodyString += "         <tr><td>Total Amount</td><td>:</td><td>$"+totalAmount+"</td></tr>";
         bodyString += "         <tr><td>Department</td><td>:</td><td>"+departnmentName+"</td></tr>";
         bodyString += "         <tr><td>Class</td><td>:</td><td>"+className+"</td></tr>";
         bodyString += "         </table>";
@@ -1271,8 +1293,13 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
             bodyString += "         <br/><br/>";
         }
 
+        bodyString += "As a next step, please send the Purchase Order to your vendor.";
+        bodyString += "Please ensure they add the PO Number on the invoice and send the invoice directly to ap@zume.com.";
+        bodyString += "<br/>";
+        bodyString += "For any other questions, please email ap@zume.com and reference the Purchase Order Number from above.";
+
         //bodyString += "         Attached PDF is snapshot of PR.";
-        bodyString += "         <br/><br/>Thank you<br/>Admin";
+        bodyString += "         <br/><br/>Thank you<br/>Zume Purchasing Team";
         bodyString += "     </body>";
         bodyString += " </html>";
         var fileObjs = [];
@@ -1288,7 +1315,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                 recipients: [requestorId, preparerId],
                 subject: emailSubject,
                 body: bodyString,
-                relatedRecords: {transactionId: Number(purchaseRequestId)},
+                //relatedRecords: {transactionId: Number(purchaseRequestId)},
                 attachments: fileObjs
             });
 
@@ -1339,7 +1366,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                 recipients: emailToId,
                 subject: emailSubject,
                 body: bodyString,
-                relatedRecords: {transactionId: Number(billId)}
+                //relatedRecords: {transactionId: Number(billId)}
             });
     }
 
@@ -1380,7 +1407,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
             recipients: emailToId,
             subject: emailSubject,
             body: bodyString,
-            relatedRecords: {transactionId: Number(billId)}
+            //relatedRecords: {transactionId: Number(billId)}
         });
     }
 
@@ -1398,6 +1425,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                             poTableString += "  <th><center><b>Item</b></center></th>";
                             poTableString += "  <th><center><b>Department</b></center></th>";
                             poTableString += "  <th><center><b>Class</b></center></th>";
+                            poTableString += "  <th><center><b>Description</b></center></th>";
                             poTableString += "  <th><center><b>Quantity</b></center></th>";
                             poTableString += "  <th><center><b>Rate</b></center></th>";
                             poTableString += "  <th><center><b>Amount</b></center></th>";
@@ -1409,6 +1437,7 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                             var itemName        = prObj.getSublistText({sublistId: 'item', fieldId: 'item', line: it});
                             var lnDepartmentNam = prObj.getSublistText({sublistId: 'item', fieldId: 'department', line: it});
                             var lnClassNm       = prObj.getSublistText({sublistId: 'item', fieldId: 'class', line: it});
+                            var lnDescptn       = prObj.getSublistText({sublistId: 'item', fieldId: 'description', line: it});
                             var itemQty         = prObj.getSublistValue({sublistId: 'item', fieldId: 'quantity', line: it});
                             var itemRate        = prObj.getSublistValue({sublistId: 'item', fieldId: 'rate', line: it});
                             var itemAmt         = prObj.getSublistValue({sublistId: 'item', fieldId: 'amount', line: it});
@@ -1421,9 +1450,10 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                                 poTableString += "  <td align=\"left\">"+itemName+"</td>";
                                 poTableString += "  <td align=\"lett\">"+lnDepartmentNam+"</td>";
                                 poTableString += "  <td align=\"left\">"+lnClassNm+"</td>";
+                                poTableString += "  <td align=\"left\">"+lnDescptn+"</td>";
                                 poTableString += "  <td align=\"center\">"+itemQty+"</td>";
-                                poTableString += "  <td align=\"right\">"+itemRate+"</td>";
-                                poTableString += "  <td align=\"right\">"+itemAmt+"</td>";
+                                poTableString += "  <td align=\"right\">$"+itemRate+"</td>";
+                                poTableString += "  <td align=\"right\">$"+itemAmt+"</td>";
                             poTableString += "</tr>";
 
                         }//for(var it=0;it<poItemLnCount;it++)
@@ -1431,8 +1461,8 @@ define(["N/http", "N/record", "N/ui/serverWidget", "N/render", "N/email", "N/sea
                         itemTotalAmount = Number(itemTotalAmount).toFixed(2);
 
                         poTableString += "<tr>";
-                            poTableString += "  <td align=\"right\" colspan=\"6\"><b>Total</b></td>";
-                            poTableString += "  <td align=\"right\"><b>"+itemTotalAmount+"</b></td>";
+                            poTableString += "  <td align=\"right\" colspan=\"7\"><b>Total</b></td>";
+                            poTableString += "  <td align=\"right\"><b>$"+itemTotalAmount+"</b></td>";
                         poTableString += "</tr>";
                     poTableString += "</table>";
                 }//if(Number(poItemLnCount) > 0)

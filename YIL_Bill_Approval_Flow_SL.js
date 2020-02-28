@@ -29,7 +29,9 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
             log.debug({title: 'vendorBillId', details: vendorBillId});
             log.debug({title: 'Fpa Approvers', details: fpaApproverId});
             log.debug({title: 'hocApproverId', details: hocApproverId});
-
+            
+            var returnInactivateErrorMesssage = "You cannot submit the Vendor Bill because one or more approvers for this Bill are inactive. Please contact the system administrator.";
+            
             try {
                 
                 var prRecordObj     = record.create({type:'customrecord_pr_approval_flow', isDynamic:true});
@@ -85,6 +87,7 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                             if(inactiveEmpObj.isinactive) {
                                 log.debug({title: 'Inactive Employee Name', details: inactiveEmpObj.firstname});
                                 _sendEmailToBillCreatorForInactiveEmployee(preparerId, currentRecObj, inactiveEmpObj.firstname);
+                                context.response.write({output: returnInactivateErrorMesssage});
                                 return;
                             }
 
@@ -149,6 +152,7 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                             if(inactiveEmpObj.isinactive) {
                                 log.debug({title: 'Inactive Employee Name', details: inactiveEmpObj.firstname});
                                 _sendEmailToBillCreatorForInactiveEmployee(preparerId, currentRecObj, inactiveEmpObj.firstname);
+                                context.response.write({output: returnInactivateErrorMesssage});
                                 return;
                             }
 
@@ -188,6 +192,7 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                             if(inactiveEmpObj.isinactive) {
                                 log.debug({title: 'Inactive Employee Name', details: inactiveEmpObj.firstname});
                                 _sendEmailToBillCreatorForInactiveEmployee(preparerId, currentRecObj, inactiveEmpObj.firstname);
+                                context.response.write({output: returnInactivateErrorMesssage});
                                 return;
                             }
 
@@ -341,6 +346,7 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                                     if(inactiveEmpObj.isinactive) {
                                         log.debug({title: 'Inactive Employee Name', details: inactiveEmpObj.firstname});
                                         _sendEmailToBillCreatorForInactiveEmployee(preparerId, currentRecObj, inactiveEmpObj.firstname);
+                                        context.response.write({output: returnInactivateErrorMesssage});
                                         return;
                                     }
 
@@ -427,6 +433,7 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
                                     if(inactiveEmpObj.isinactive) {
                                         log.debug({title: 'Inactive Employee Name', details: inactiveEmpObj.firstname});
                                         _sendEmailToBillCreatorForInactiveEmployee(preparerId, currentRecObj, inactiveEmpObj.firstname);
+                                        context.response.write({output: returnInactivateErrorMesssage});
                                         return;
                                     }
 
@@ -543,15 +550,17 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
         }
 
 
-        var emailSubject = "Bill #"+tranIdText + " has been submitted for your approval.";
+        var emailSubject = "Invoice "+tranIdText + " from vendor "+vendorName+" has been submitted for your approval.";
         for(var s=0;s<sendEmailTo.length;s++) {
             var emailToId = sendEmailTo[s];
             var nextLevel = emailNxtLevelAtt[s];
             var userName = 'User';
-            var empObj = search.lookupFields({type: search.Type.EMPLOYEE, id: emailToId, columns: ["firstname"]});
+            var empObj = search.lookupFields({type: search.Type.EMPLOYEE, id: emailToId, columns: ["firstname","lastname"]});
             if(empObj) {
                 log.debug({title: "empObj", details: JSON.stringify(empObj)});
-                userName = empObj.firstname;
+                var firstName = empObj.firstname;
+                var lastName = empObj.lastname;
+                userName = firstName + " " + lastName;
             }
 
             //var param = {processFlag: 'a', prAfId: prAfId, recId: recId, nextLevel: nextLevel, fromrec: "1"};
@@ -561,15 +570,15 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
 
             bodyString += " <html>";
             bodyString += "     <body>";
-            bodyString += "         Dear "+userName+",<br/><br/>You have received a new Bill for approval.";
+            bodyString += "         Hello "+userName+",<br/><br/>You have received a new invoice for approval.";
             bodyString += "         <br/><br/>";
             
             bodyString += "         <table>";
-            bodyString += "         <tr><td>Bill Number</td><td>:</td><td>"+tranIdText+"</td></tr>";
-            bodyString += "         <tr><td>Requester</td><td>:</td><td>"+requestorName+"</td></tr>";
+            bodyString += "         <tr><td>Invoice Number</td><td>:</td><td>"+tranIdText+"</td></tr>";
+            bodyString += "         <tr><td>Requestor</td><td>:</td><td>"+requestorName+"</td></tr>";
             bodyString += "         <tr><td>Preparer</td><td>:</td><td>"+preparerName+"</td></tr>";
             bodyString += "         <tr><td>Vendor</td><td>:</td><td>"+vendorName+"</td></tr>";
-            bodyString += "         <tr><td>Total Amount</td><td>:</td><td>"+totalAmount+"</td></tr>";
+            bodyString += "         <tr><td>Total Amount</td><td>:</td><td>$"+totalAmount+"</td></tr>";
             bodyString += "         <tr><td>Department</td><td>:</td><td>"+departnmentName+"</td></tr>";
             bodyString += "         <tr><td>Class</td><td>:</td><td>"+className+"</td></tr>";
             bodyString += "         </table>";
@@ -915,12 +924,10 @@ define(['N/record', 'N/http', 'N/search', 'N/render', "N/email", "N/url", "N/enc
 
         bodyString += " <html>";
         bodyString += "     <body>";
-        bodyString += "         Dear "+userName+",<br/><br/>System cancelled the apprvoval proacess for Bill# "+tranIdText+".<br/><br/>";
-        bodyString += "         You have employee record named \""+inactiveEmployeeName+"\" is inactivate which is a part of approval process.";
-        bodyString += "         <br/><br/>";
-        bodyString += "         Please do the needful.";
-        bodyString += "         <br/>";
-        bodyString += "         <br/><br/>Thank you<br/>Admin";
+        bodyString += "         Dear "+userName+",<br/><br/>Unfortunately we had to cancel the approval process for Bill# "+tranIdText+".<br/><br/>";
+        bodyString += "         In the approval chain there is an employee record named "+inactiveEmployeeName+". The record for this employee is inactive in NetSuite.  With this we cannot submit the Bill. Please reach out to ap@zume.com to discuss potential next steps and reference the Bill Number from above.";
+        
+        bodyString += "         <br/><br/>Thank you<br/>Zume Purchasing Team";
         bodyString += "     </body>";
         bodyString += " </html>";
         

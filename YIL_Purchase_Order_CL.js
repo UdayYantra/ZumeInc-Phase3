@@ -402,6 +402,9 @@ define(['N/record', 'N/search', 'N/url', 'N/https', 'N/runtime'], function(recor
                 if(response.body == 'true') {
                     window.location.reload();
                 }
+                else {
+                    alert(response.body);
+                }
             }
 
         }
